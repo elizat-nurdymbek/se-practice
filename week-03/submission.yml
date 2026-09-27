@@ -1,0 +1,43 @@
+# week-03/submission.yml — your declaration for this lab.
+
+schema: 1
+week: "03"
+
+student:
+  name: Elizat Nurdymbek
+  student_id: 24B031946
+  github: elizat-nurdymbek
+
+assistant:
+  tool: ChatGPT
+  model: GPT-5.6 Luna
+
+counts:
+  user_stories: 6
+  acceptance_criteria_sets: 3
+
+checker:
+  pass: 23
+  fail: 0
+  error: 0
+  commit: d247423
+
+assumptions:
+  overlap_touching_bookings: allowed 
+  exactly_two_hours: allowed
+
+traceability:
+  use_cases_not_covered: [UC-04, UC-05]
+  stories_not_traced: [] 
+
+review_findings:
+  - US-02: booking story was revised to include all booking rules.
+  - AC-02: exactly two hours was added as an explicit allowed boundary case.
+  - UC-06: the unjustified include relationship was removed from the final diagram.
+  - UC-04: no selected acceptance criteria directly test block or unblock room.
+  - UC-05: no selected acceptance criteria directly test review usage.
+
+
+honesty:
+  can_explain_everything_submitted: yes
+  ai_usage_disclosed: yes
