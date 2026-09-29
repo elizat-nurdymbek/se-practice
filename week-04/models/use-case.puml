@@ -1,0 +1,37 @@
+@startuml
+skinparam actorStyle outline
+skinparam packageStyle rectangle
+
+actor "Student" as student
+actor "Administrator" as admin
+
+rectangle "Smart Campus Study Room Booking System" {
+    usecase "View availability" as UC_View
+    usecase "Book room" as UC_Book
+    usecase "Cancel booking" as UC_Cancel
+    usecase "Block/unblock room" as UC_Block
+    usecase "Review usage" as UC_Usage
+
+    student --> UC_View
+    student --> UC_Book
+    student --> UC_Cancel
+
+    admin --> UC_Block
+    admin --> UC_Usage
+}
+
+note right of UC_Book
+    Successful booking produces
+    a confirmation (R4).
+end note
+
+note bottom of UC_Book
+    Assumptions:
+    1. Students can view room availability
+       before booking.
+    2. Blocking a room prevents new bookings
+       but does not cancel existing bookings.
+    3. Students can cancel only their own bookings.
+end note
+
+@enduml
