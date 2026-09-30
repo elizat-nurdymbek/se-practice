@@ -1,0 +1,45 @@
+@startuml
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "Student" as student
+participant ":BookingService" as service
+participant ":BookingRepository" as repo
+
+student -> service : bookRoom(roomId, startTime, durationHours)
+activate service
+
+note over service
+  Validate Rule R1:
+  Future start time &
+  0 < duration <= 2 hours
+end note
+
+alt R1 Validation Fails
+    service --> student : error("Invalid booking parameters / duration")
+else R1 Validation Passes
+
+    service -> repo : isRoomAvailable(roomId, startTime, durationHours)
+    activate repo
+    repo --> service : availabilityStatus
+    deactivate repo
+
+    alt Room is Blocked (R3) or Has Overlapping Booking (R2)
+        service --> student : error("Room unavailable for requested time")
+    else Room is Available
+        service -> repo : createBooking(studentId, roomId, startTime, durationHours)
+        activate repo
+        repo --> service : bookingDetails
+        deactivate repo
+
+        note over service
+          Rule R4:
+          Generate confirmation
+        end note
+
+        service --> student : confirmation("Booking successful", bookingDetails)
+    end
+end
+
+deactivate service
+@enduml
