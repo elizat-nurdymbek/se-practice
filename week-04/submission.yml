@@ -1,0 +1,61 @@
+# week-04/submission.yml — your declaration for this lab.
+#
+# Facts only. Every explanation goes in lab-report.md; nothing here repeats prose.
+# Fill every value. Check it before you push:
+#
+#     python tests/validate_submission.py
+#
+# The validator checks shape, never quality. A green run is the floor, not the grade.
+# If you cannot run Python, fill the file by hand against the comments — a malformed
+# file costs you nothing if the content is there.
+
+schema: 1
+week: "04"
+
+student:
+  name: Elizat Nurdymbek
+  student_id: 24B031946
+  github: elizat-nurdymbek
+
+assistant:
+  tool: ChatGPT
+  model: GPT-5.6 Luna
+
+counts:
+  behaviour_diagram: sequence
+  stories_source: week-03
+  use_cases: 5
+  change_log_rows: 3 
+
+checker:
+  # Numbers from YOUR last run of: python tests/check_models.py
+  # They must add up to the number of checks it runs. Report them as they came out.
+  # A FAIL you report and explain in lab-report.md costs you nothing. A hidden one costs the criterion.
+  pass: 37
+  fail: 0
+  error: 0
+  commit: 140b77c      # the commit you ran the checker at: git rev-parse --short HEAD
+                       # (normally the commit just before you commit this file — that is fine)
+  kept_fails: []       # the check IDs that still FAIL and are explained in lab-report.md §9, e.g. [CL5]
+
+assumptions:
+  # The scenario does not settle these two. Decide, declare, and defend the decision in lab-report.md §4.3.
+  # Either answer is acceptable. Not deciding is not.
+  # (Week 03's third question, exactly two hours, is settled by R1 this week: "at most 2 hours" — allowed.)
+  overlap_touching_bookings: allowed 
+  blocking_a_booked_room: keep-bookings
+
+traceability:
+  # Empty lists are allowed — if you claim full coverage, the checker and I will test that claim.
+  use_cases_not_traced: []     # use cases in your diagram with no approved story, e.g. [Login]
+  rules_not_shown: []          # rules R1-R4 not visible in your behaviour diagram, e.g. [R3]
+
+review_findings:
+  - UC_Confirm was modeled as a separate confirmation use case; removed because confirmation is an outcome of successful booking, not a separate user goal.
+  - Administrator was included as a domain class; removed because the class diagram focuses on the required booking domain concepts.
+  - The original sequence flow did not make R1, R2 and R3 validation steps sufficiently explicit; revised the booking flow to show the checks before saving.
+
+honesty:
+  originals_unedited: yes
+  can_explain_everything_submitted: yes
+  ai_usage_disclosed: yes   
