@@ -1,0 +1,27 @@
+@startuml
+autonumber
+
+actor Student
+participant BookingService
+participant BookingRepository
+
+Student -> BookingService : bookRoom(roomId, startTime, durationHours)
+
+BookingService -> BookingService : validate time constraints (R1)
+
+alt created
+    BookingService -> BookingRepository : check room status (R3)
+    BookingRepository --> BookingService : room available
+
+    BookingService -> BookingRepository : check overlapping bookings (R2)
+    BookingRepository --> BookingService : no overlap
+
+    BookingService -> BookingRepository : save booking
+    BookingRepository --> BookingService : booking created
+
+    BookingService --> Student : confirmation (R4)
+else unavailable
+    BookingService --> Student : booking rejected
+end
+
+@enduml

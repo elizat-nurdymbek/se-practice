@@ -1,0 +1,48 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class Student {
+    - studentId: String
+    - name: String
+    - email: String
+}
+
+class Room {
+    - roomId: String
+    - roomName: String
+    - isBlocked: Boolean
+    + block(): Void
+    + unblock(): Void
+    + isAvailable(startTime: DateTime, durationHours: Double): Boolean
+}
+
+class Booking {
+    - bookingId: String
+    - startTime: DateTime
+    - durationHours: Double
+    - status: BookingStatus
+    + createBooking(): Void
+    + cancel(): Void
+    + sendConfirmation(): Void
+}
+
+class Administrator {
+    - adminId: String
+    - name: String
+    - email: String
+    + reviewUsage(startDate: Date, endDate: Date): Report
+}
+
+enum BookingStatus {
+    CONFIRMED
+    CANCELLED
+}
+
+' Relationships
+Student "1" -- "0..*" Booking : places >
+Room "1" -- "0..*" Booking : reserved for >
+Administrator "0..*" -- "0..*" Room : manages >
+
+Booking ..> BookingStatus
+
+@enduml
