@@ -246,7 +246,7 @@ PASS   checker.pass                              37
 PASS   checker.fail                              0
 PASS   checker.error                             0
 PASS   checker.total                             37 checks, as check_models.py runs
-PASS   checker.commit                            7181346
+PASS   checker.commit                            92b3ff3
 PASS   checker.kept_fails                        0 listed
 PASS   assumptions.overlap_touching_bookings     allowed
 PASS   assumptions.blocking_a_booked_room        keep-bookings
