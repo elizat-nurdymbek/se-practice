@@ -28,20 +28,75 @@ My Week 04 model already said touching bookings are allowed, so AC4 does not cha
 **The assistant's plan, pasted unedited:**
 
 ```text
-(paste here)
+### Implementation Plan
+
+1. **Input Validation & Order of Evaluation**
+* Perform pure boolean evaluation returning `False` as soon as any condition fails (short-circuiting).
+* Keep all inputs immutable and unchanged throughout execution.
+
+2. **Sequential Check Pipeline**
+* **Check 1: Time Constraints & Ordering (AC1)**
+* Confirm `0 <= start`.
+* Confirm `start < end`.
+* Confirm `end <= 1440`.
+* Confirm `start > now`.
+
+* **Check 2: Duration Constraint (AC2)**
+* Confirm `(end - start) <= 120`.
+
+* **Check 3: Room Status (AC3)**
+* Confirm `not blocked`.
+
+* **Check 4: Overlap Detection with Existing Bookings (AC4)**
+* Iterate through each tuple `(b_start, b_end)` in `existing`.
+* Because half-open intervals $[start, end)$ and $[b\_start, b\_end)$ overlap if and only if $\max(start, b\_start) < \min(end, b\_end)$, verify that **no** booking satisfies `start < b_end and end > b_start`.
+
+* **Check 5: Final Decision (AC5)**
+* Return `True` if all preceding checks pass; return `False` otherwise.
+
+---
+
+### Identified Assumptions
+
+* **Data Types:** `start`, `end`, and `now` are integers. `blocked` is a boolean. `existing` is an iterable (e.g., `list` or `set`) containing `(start, end)` integer tuples.
+* **Interval Type:** Standard half-open interval $[start, end)$ behavior applies. Equal boundary points (e.g., `end == b_start` or `start == b_end`) are treated as non-overlapping touching endpoints.
+* **Pre-validated Inputs:** Per the contract, `now` is strictly within `0..1439` and tuples in `existing` are already valid active bookings.
+
+---
+
+### Suggested Boundary Test Cases
+
+| Case | Input Values | Expectation / Target Check | Reason |
+| --- | --- | --- | --- |
+| **Start equals now** | `start = 600`, `now = 600` | `False` (AC1) | Tests strict inequality `start > now`. |
+| **Start barely after now** | `start = 601`, `now = 600` | Dependent on other ACs | Tests minimum valid offset from `now`. |
+| **Max duration boundary** | `start = 100`, `end = 220` (120 min) | `True` (AC2) | Tests upper edge of 120-minute limit. |
+| **Exceed max duration** | `start = 100`, `end = 221` (121 min) | `False` (AC2) | Tests off-by-one error on max duration. |
+| **End boundary at midnight** | `end = 1440`, `start = 1320` | `True` (AC1) | Tests upper limit of time spectrum ($1440$). |
+| **End exceeding midnight** | `end = 1441`, `start = 1320` | `False` (AC1) | Tests out-of-bounds `end` value. |
+| **Touching existing (End-to-Start)** | New: `(100, 160)`, Existing: `[(160, 220)]` | `True` (AC4) | Tests that touching endpoints do not trigger overlap. |
+| **Touching existing (Start-to-End)** | New: `(220, 280)`, Existing: `[(160, 220)]` | `True` (AC4) | Tests adjacent end-to-start touching boundary. |
+| **1-minute overlap** | New: `(100, 161)`, Existing: `[(160, 220)]` | `False` (AC4) | Tests minimal interval overlap detection. |
+| **Enclosed within existing** | New: `(120, 150)`, Existing: `[(100, 200)]` | `False` (AC4) | Tests strict containment detection. |
 ```
 
-**What the plan invented or changed.** One row for every rule in the plan that is not in the
-contract or in AC1–AC5, or that says something different from them. If you found none, write one
-row saying which lines of the plan you checked against which AC.
+**What the plan invented or changed.** One row for every rule in the plan that is not in the contract or in AC1–AC5, or that says something different from them. If you found none, write one row saying which lines of the plan you checked against which AC.
 
 | # | What the plan said | What the contract or the AC says | What I did |
 | --- | --- | --- | --- |
-| 1 | | | |
+| 1 | The heading says "Input Validation & Order of Evaluation". | The contract says inputs are already valid. No AC asks for input validation. | The plan has no validation steps under this heading, only the order of checks and "do not change inputs". I kept it as it is. |
+| 2 | "existing is an iterable (e.g., list or set)". | The contract says only that existing contains (start, end) tuples. | Harmless, but I will treat existing as a list of tuples. |
+| 3 | "now is strictly within 0..1439". | The contract says now is valid (0-1439), so both ends are included. | Wrong word, but no check depends on it. I ignored it. |
+| 4 | Checks 1-5 (AC1 to AC5 in order, overlap as `start < b_end and end > b_start`). | AC1-AC5 and "intervals include the start and exclude the end". | I checked every step against its AC line. I found no invented rule (no buffer, no sorting, no extra limit). |
 
 **Boundary cases the assistant suggested that I kept as tests:**
 
--
+- start equals now (start = 600, now = 600) -> False (AC1). I use the base input: (540, 570).
+- exactly 120 minutes allowed and 121 minutes rejected (AC2). I use (720, 840) and (720, 841).
+- end exactly 1440 allowed (AC1). I use (1380, 1440).
+- touching at both ends allowed (AC4): (660, 720) and (570, 600).
+- one-minute overlap rejected (AC4): (599, 661) style cases.
+- new interval inside the existing one rejected (AC4): (610, 640).
 
 ---
 
