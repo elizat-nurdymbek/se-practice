@@ -1,0 +1,47 @@
+@startuml
+title Course registration - sequence
+
+actor Student
+participant CatalogPage
+participant RegistrationService
+participant OfferingRepository
+participant EnrollmentRepository
+
+== Catalog browsing (R1) ==
+Student -> CatalogPage : openCatalog(semester)
+CatalogPage -> OfferingRepository : listOfferings(semester)
+OfferingRepository --> CatalogPage : offerings with course code, title, offering, available places
+CatalogPage --> Student : show catalog
+note right of CatalogPage
+  Viewing the catalog does not reserve a place.
+end note
+
+== Registration (R2 - R5) ==
+Student -> CatalogPage : selectOffering(offeringId)
+Student -> RegistrationService : registerForOffering(studentId, offeringId)
+
+group atomic final checks and creation
+  note over RegistrationService, EnrollmentRepository
+    atomic: the duplicate check, the capacity check and the creation
+    of the Enrollment run as one indivisible operation, so two
+    competing requests cannot take the same last place.
+  end note
+
+  RegistrationService -> EnrollmentRepository : existsEnrollment(studentId, offeringId)
+  EnrollmentRepository --> RegistrationService : already enrolled or not
+  RegistrationService -> EnrollmentRepository : countEnrollments(offeringId)
+  EnrollmentRepository --> RegistrationService : current count
+  RegistrationService -> OfferingRepository : getCapacity(offeringId)
+  OfferingRepository --> RegistrationService : capacity
+
+  alt already enrolled
+    RegistrationService --> Student : rejected: already enrolled
+  else course full
+    RegistrationService --> Student : rejected: course full
+  else not enrolled and places left
+    RegistrationService -> EnrollmentRepository : createEnrollment(studentId, offeringId)
+    EnrollmentRepository --> RegistrationService : Enrollment created
+    RegistrationService --> Student : confirm registration
+  end
+end
+@enduml
