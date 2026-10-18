@@ -47,6 +47,8 @@
 
 ## 4. Class diagram
 
+![Final class diagram](models/img/classes.png)
+
 | Association | Read left to right | Read right to left |
 | --- | --- | --- |
 | Student "1" -- "0..*" Enrollment : holds > | One Student holds zero or more Enrollments. | Each Enrollment is held by exactly one Student. |
@@ -58,6 +60,7 @@
 **Capacity constraint:** Note N1: the number of Enrollments of a CourseOffering must never exceed its capacity. Multiplicity 0..* has no upper limit, and it cannot use the capacity value, which is different for each offering.
 
 **Uniqueness constraint:** Note N2: a Student has at most one Enrollment for the same CourseOffering. Multiplicities describe each end separately, so they cannot say that the pair (student, offering) may appear only once.
+
 ## 5. Traceability
 
 | Rule and criterion | Model evidence | Validation case |
