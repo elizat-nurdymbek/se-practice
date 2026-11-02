@@ -7,7 +7,7 @@
 | Coding assistant (tool) | ChatGPT |
 | Coding assistant model | GPT-6 |
 | Bolt.new model | Standard |
-| Bolt project link | https://bolt.new |
+| Bolt project link | https://bolt.new/~/sb1-oyt3a5kl|
 | Language | Python |
 | Path | A |
 | Python v1 from | week-05 |
@@ -63,60 +63,68 @@
 
 ## 3. Python v1 review
 
-<!-- One row per conditional branch in code/original/booking_v1.py (your language's v1 on
-     Path B). Quote the condition exactly. AC1-AC4 must all appear in the AC column. -->
-
 | Branch in v1 (quoted) | AC | Satisfies it? | Why |
 | --- | --- | --- | --- |
-| (write here) | (write here) | (write here) | (write here) |
-| (write here) | (write here) | (write here) | (write here) |
-| (write here) | (write here) | (write here) | (write here) |
-| (write here) | (write here) | (write here) | (write here) |
+| 0 <= start < end <= 1440 | AC1 | Yes | Checks that start is not negative, end is greater than start, and end does not exceed 1440. It accepts an end time of exactly 1440 and rejects 1441. |
+| start > now | AC1 | Yes | Requires the requested start time to be strictly later than the current time. If start == now, the function returns False, as in T6. |
+| (end - start) > 120 | AC2 | Yes | Rejects durations greater than 120 minutes. Exactly 120 minutes is allowed, while 121 minutes is rejected. |
+| blocked | AC3 | Yes | If the room is blocked (True), the function immediately returns False. |
+| start < b_end and end > b_start | AC4 | Yes | Checks whether the requested interval overlaps an existing booking. Strict comparisons allow touching endpoints, such as T1, while actual overlaps such as T2 and T10 are rejected. |
 
 ## 4. Prototype v1 in Bolt.new
 
 **Prompt as sent:**
 
 ~~~~text
-(paste here)
-~~~~
+Build a one-page, responsive "Smart Campus Room Availability Checker" for ONE selected room, using fictional booking data. The page only checks availability; it does not create or confirm bookings.
 
-<!-- Main generated files or components, with their path inside web/original/
-     (for example src/App.tsx). At least two. -->
+Fixed demo data shown on the page: room "Room A-101", current time 09:00, one existing booking 10:00-11:00. A "Room is blocked" toggle (off by default). Inputs: start time and end time (24-hour, to the minute) and a "Check" button.
+
+Rules:
+- AC1: start and end are valid, start is before end, end is no later than 24:00 (midnight), and start is strictly later than the current time (09:00).
+- AC2: duration is at most 120 minutes; exactly 120 is allowed.
+- AC3: if the room is blocked, every request is Unavailable.
+- AC4: a request that overlaps an existing booking is Unavailable; touching at an endpoint (for example 11:00-12:00) is NOT an overlap.
+- AC5: show a clear, unambiguous "Available" or "Unavailable" result; never modify the existing bookings.
+- AC6: show understandable validation messages for invalid input, and a usable layout on narrow mobile screens.
+
+Do NOT add login, a backend, or a database. No external APIs, payments, analytics, or unrelated features.
+~~~~
 
 | Generated file or component | Path | Its role |
 | --- | --- | --- |
-| (write here) | (write here) | (write here) |
-| (write here) | (write here) | (write here) |
+| App component | src/App.tsx | Contains the main user interface, room selection, time inputs, booking schedule, and availability result panel. |
+| Availability logic | src/availability.ts | Contains the validation rules for time intervals, maximum duration, blocked rooms, and overlapping bookings. |
+| Type definitions | src/types.ts | Defines the TypeScript interfaces for rooms and bookings, and the Available/Unavailable result structure. |
 
 **What v1 does:**
 
-- (write here)
+- Allows the user to select a room from the available room list.
+- Provides inputs for current time, start time, and end time.
+- Checks whether the requested time interval is valid and whether its duration exceeds 120 minutes.
+- Checks whether the selected room is blocked.
+- Compares the requested interval with existing bookings and detects overlaps.
+- Displays an Available or Unavailable result with explanatory messages.
+- Shows the existing booking schedule for the selected room.
+- Uses a responsive layout intended to work on desktop and narrow screens.
 
 ## 5. Test cases — executed on both artifacts
 
-<!-- Base for every case unless the row says otherwise: now = 540, blocked = False,
-     existing = [(600, 660)]. Do not change the first four columns.
-     Python columns: True, False or Error (it raised) — what the call actually returned.
-       T11: the result of the SECOND call. T12: n/a.
-       Path A: the checker runs both of your files on T1-T11 and compares (C2, C3).
-     Page columns: Available, Unavailable or Not testable — what the page actually showed.
-     Never write a result you did not observe. -->
-
 | Case | Name | Input | Expected | Python v1 | Python final | Page v1 | Page final |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| T1 | Touching | 660–720 | Available | | | | |
-| T2 | Overlap | 630–690 | Unavailable | | | | |
-| T3 | Blocked | 660–720, blocked | Unavailable | | | | |
-| T4 | Exactly 120 min | 720–840 | Available | | | | |
-| T5 | 121 min | 720–841 | Unavailable | | | | |
-| T6 | Starts now | 540–570 | Unavailable | | | | |
-| T7 | Reversed | 720–660 | Unavailable | | | | |
-| T8 | Ends at midnight | 1380–1440 | Available | | | | |
-| T9 | Past midnight | 1380–1441 | Unavailable | | | | |
-| T10 | Second booking | 720–780, existing (600–660), (700–760) | Unavailable | | | | |
-| T11 | Same check twice | 660–720, twice | Available | | | | |
-| T12 | Narrow screen | T1 at ~375 px wide | Available | n/a | n/a | | |
+| T1 | Touching | 660–720 | Available | True | True | Available | |
+| T1 | Touching | 660–720 | Available | True | True | Available | |
+| T2 | Overlap | 630–690 | Unavailable | False | False | Unavailable | |
+| T3 | Blocked | 660–720, blocked | Unavailable | False | False | Unavailable | |
+| T4 | Exactly 120 min | 720–840 | Available | True | True | Available | |
+| T5 | 121 min | 720–841 | Unavailable | False | False | Unavailable | |
+| T6 | Starts now | 540–570 | Unavailable | False | False | Unavailable | |
+| T7 | Reversed | 720–660 | Unavailable | False | False | Unavailable | |
+| T8 | Ends at midnight | 1380–1440 | Available | True | True | Not testable | |
+| T9 | Past midnight | 1380–1441 | Unavailable | False | False | Not testable | |
+| T10 | Second booking | 720–780, existing (600–660), (700–760) | Unavailable | False | False | Available | |
+| T11 | Same check twice | 660–720, twice | Available | True | True | Available | |
+| T12 | Narrow screen | T1 at ~375 px wide | Available | n/a | n/a | Available | |
 
 ## 6. Traceability
 
@@ -297,7 +305,36 @@
      code/ — the part ending in "Ran N tests" and OK or FAILED. -->
 
 ~~~~text
-(paste here)
+test_blocked_room_is_rejected (test_booking.BookingTests.test_blocked_room_is_rejected) ... ok
+test_empty_existing_is_allowed (test_booking.BookingTests.test_empty_existing_is_allowed) ... ok
+test_end_after_midnight_is_rejected (test_booking.BookingTests.test_end_after_midnight_is_rejected) ... ok
+test_end_exactly_1440_is_allowed (test_booking.BookingTests.test_end_exactly_1440_is_allowed) ... ok
+test_exactly_two_hours_is_allowed (test_booking.BookingTests.test_exactly_two_hours_is_allowed) ... ok
+test_existing_is_not_changed (test_booking.BookingTests.test_existing_is_not_changed) ... ok
+test_gap_between_several_bookings_is_allowed (test_booking.BookingTests.test_gap_between_several_bookings_is_allowed) ... ok
+test_negative_start_is_rejected (test_booking.BookingTests.test_negative_start_is_rejected) ... ok
+test_new_contains_existing_is_rejected (test_booking.BookingTests.test_new_contains_existing_is_rejected) ... ok
+test_new_inside_existing_is_rejected (test_booking.BookingTests.test_new_inside_existing_is_rejected) ... ok
+test_one_minute_at_end_of_day_is_allowed (test_booking.BookingTests.test_one_minute_at_end_of_day_is_allowed) ... ok
+test_one_minute_overlap_at_start_is_rejected (test_booking.BookingTests.test_one_minute_overlap_at_start_is_rejected) ... ok
+test_over_two_hours_is_rejected (test_booking.BookingTests.test_over_two_hours_is_rejected) ... ok
+test_overlap_at_start_side_is_rejected (test_booking.BookingTests.test_overlap_at_start_side_is_rejected) ... ok
+test_overlap_is_rejected (test_booking.BookingTests.test_overlap_is_rejected) ... ok
+test_overlap_with_second_of_several_is_rejected (test_booking.BookingTests.test_overlap_with_second_of_several_is_rejected) ... ok
+test_reversed_t7 (test_booking.BookingTests.test_reversed_t7) ... ok
+test_reversed_times_are_rejected (test_booking.BookingTests.test_reversed_times_are_rejected) ... ok
+test_same_interval_is_rejected (test_booking.BookingTests.test_same_interval_is_rejected) ... ok
+test_second_booking_overlap_t10 (test_booking.BookingTests.test_second_booking_overlap_t10) ... ok
+test_start_equal_to_now_is_rejected (test_booking.BookingTests.test_start_equal_to_now_is_rejected) ... ok
+test_start_one_minute_after_now_is_allowed (test_booking.BookingTests.test_start_one_minute_after_now_is_allowed) ... ok
+test_touching_end_is_allowed (test_booking.BookingTests.test_touching_end_is_allowed) ... ok
+test_touching_start_is_allowed (test_booking.BookingTests.test_touching_start_is_allowed) ... ok
+test_zero_length_is_rejected (test_booking.BookingTests.test_zero_length_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.000s
+
+OK
 ~~~~
 
 ### 12.2 Path B only — three faults you planted
