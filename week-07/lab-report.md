@@ -162,8 +162,13 @@ requests* · *mocked booking function*, or your own) and the AC that decides it.
 
 | # | Test or part of the suite | What is weak or wrong | Decision: accept / revise / reject | AC or reason |
 | --- | --- | --- | --- | --- |
-| 1 | | | accept / revise / reject | |
-| 2 | | | accept / revise / reject | |
+| 1 | Shared defaultBookings fixture | The same bookings array is shared across multiple tests. Each test should use fresh test data to avoid affecting other tests. | revise | Test isolation |
+| 2 | T02 and AI's start >= now suggestion | The suggestion allows a booking to start at the current time, but AC1 requires the start time to be strictly after the current time. | reject | AC1 |
+| 3 | start = 1440, end = 1440 | This test repeats T03 because the interval has zero duration. | reject | AC1 — duplicate test |
+| 4 | AC6 Strict Boolean | The AI misunderstood AC6. It concerns the mobile UI and user feedback, not the return type. | Reject | AC6 |
+| 5 | AC5 Object.freeze | Freezing the input does not replace comparing the booking data before and after the function call. | revise | AC5 |
+| 6 | X3: start = -1 | This checks the lower time boundary, which was missing from the original test plan. | accept | AC1 |
+| 7 | 541–542 | This checks that a booking starting one minute after the current time is accepted. | Accept | AC1 |
 
 ---
 
@@ -171,28 +176,270 @@ requests* · *mocked booking function*, or your own) and the AC that decides it.
 
 ### 6.1 The first run
 
-The **real** terminal output of the first run of the first suite, pasted unedited. Include the
-`RUN  v…` line and the `Tests` summary line. A build message or the assistant saying "tests pass"
-is not a run.
+The **real** terminal output of the first run of the first suite, pasted unedited. Include the `RUN  v…` line and the `Tests` summary line. A build message or the assistant saying "tests pass" is not a run.
 
 ```text
-(paste here)
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-07/app
+
+ ✓ src/booking.test.ts (17 tests) 8ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02: returns false when start time equals now (starts now) 2ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04: returns false when start is greater than end (reversed times) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05: returns false when end time exceeds maximum 1440 minutes 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1: returns true when end time is exactly 1440 (ends at 24:00 boundary) 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06: returns true for a booking of exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07: returns false for a booking of 121 minutes (exceeds 120 min max) 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room State > T13: returns false when the room is blocked, even with a valid time slot 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T01: returns truewhen touching existing booking after (ends at 660, starts at 660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T08: returns truewhen touching existing booking before (starts at 600, ends at 600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09: returns false for a partial overlap with an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10: returns false when the requested booking completely encloses an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11: returns false when the requested booking is completely inside an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12: returns false for an identical time slot to an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14: returns truewhen there are no existing bookings (bookings = []) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > X2: returns true when slot fits precisely between two adjacent bookings 0ms
+   ✓ canBook() unit tests > AC5: Data Immutability > ensures the bookings array and objects are not modified during invocation 1ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  16:23:54
+   Duration  595ms (transform 51ms, setup 0ms, collect 38ms, tests 8ms, environment 0ms, prepare 80ms)
 ```
 
-**Each failure, diagnosed** (the deck's table: import/runner error · assertion mismatch · result
-changing per run · no tests discovered). Write `none` in the first row if nothing failed.
+**Each failure, diagnosed** (the deck's table: import/runner error · assertion mismatch · result changing per run · no tests discovered). Write `none` in the first row if nothing failed.
 
 | Failing test | Observed failure | First check | Test repair or implementation fix? | Action taken |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| none | none | none | none | none |
 
 ### 6.2 The improvement prompt
 
-The deck's improvement prompt exactly as sent, followed by the actual output from 6.1. Then
-paste the assistant's answer, unedited:
+The deck's improvement prompt exactly as sent, followed by the actual output from 6.1. Then paste the assistant's answer, unedited:
 
 ```text
-(paste here)
+## Test Suite Audit & Findings
+
+While all 17 tests currently pass against the provided implementation of `canBook`, an audit reveals weak assertions, missing edge cases, and structural gaps relative to standard AC boundary requirements.
+
+### 1. Weak Assertions & Immutability Test Gaps
+
+* **Issue in AC5:** `JSON.stringify()` checks array shape, but it does not catch object mutation (e.g., modifying properties directly or freezing objects). Additionally, `Object.freeze()` is not tested to ensure the function is strictly read-only.
+* **Defect detectable:** Mutating properties inside existing `Interval` items during the loop, or calling array mutation methods like `.sort()` or `.pop()` on frozen input arrays.
+
+### 2. Missing Boundary Conditions (AC1, AC2, AC4)
+
+* **Missing AC1 Lower Bound ($start \ge 0$):** No test checks negative start times (e.g., `start: -1`).
+* **Missing AC1 Upper Bound ($start < 1440$):** No test checks $start = 1440$.
+* **Missing AC1/AC2 Duration Bounds:** Minimal valid duration (e.g., 1 minute) is not tested.
+* **Defect detectable:** A bug where `0 <= start` check is omitted, or strict inequalities like `< 1440` are relaxed to `<= 1440`.
+
+### 3. AC Alignment & AC6 Coverage
+
+* **AC6 Context:** AC6 typically represents defensive input handling or return contract consistency (e.g., returning strictly boolean `false` rather than falsy values like `undefined` or throwing unhandled errors when evaluating empty/invalid edge cases).
+
+---
+
+## Proposed Test Enhancements
+
+### Summary of Changes
+
+| Target AC | Proposed Test / Repair | Requirement | Defect Detectable |
+| --- | --- | --- | --- |
+| **AC1** | Negative Start Time (`start: -1`) | $start \ge 0$ | Omitting lower bound check on `start`. |
+| **AC1** | Boundary Start Time (`start: 1440`) | $start < 1440$ | Using $start \le 1440$ instead of $start < end \le 1440$. |
+| **AC1** | Minimum Duration (`start: 541, end: 542`) | $start < end$ (1 min duration) | Off-by-one errors on minimum allowable duration. |
+| **AC4/AC5** | Object/Array Immutability (`Object.freeze`) | Pure function execution | In-place mutation, sorting, or array modification. |
+| **AC6** | Strict Boolean Return Type | Function must return `boolean` | Returning numbers, `undefined`, or truthy/falsy non-booleans. |
+
+---
+
+## Refined Vitest Suite (`src/booking.test.ts`)
+
+```typescript
+import { describe, expect, it } from 'vitest';
+import { canBook, type Interval } from './booking';
+
+describe('canBook() unit tests', () => {
+  const NOW = 540; // 09:00 AM
+  const defaultBookings: Interval[] = [{ start: 600, end: 660 }];
+
+  // ---------------------------------------------------------------------------
+  // AC1: Time Interval Validity (0 <= start < end <= 1440, start > now)
+  // ---------------------------------------------------------------------------
+  describe('AC1: Time Interval Validity', () => {
+    it('T02: returns false when start time equals now', () => {
+      expect(
+        canBook({ start: 540, end: 570, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T03: returns false for zero duration (start === end)', () => {
+      expect(
+        canBook({ start: 720, end: 720, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T04: returns false when start is greater than end', () => {
+      expect(
+        canBook({ start: 750, end: 720, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T05: returns false when end time exceeds 1440 minutes', () => {
+      expect(
+        canBook({ start: 1380, end: 1441, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('X1: returns true when end time is exactly 1440', () => {
+      expect(
+        canBook({ start: 1380, end: 1440, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(true);
+    });
+
+    it('returns false when start time is negative (< 0)', () => {
+      expect(
+        canBook({ start: -1, end: 60, now: -10, blocked: false, bookings: [] })
+      ).toBe(false);
+    });
+
+    it('returns false when start time equals 1440', () => {
+      expect(
+        canBook({ start: 1440, end: 1440, now: NOW, blocked: false, bookings: [] })
+      ).toBe(false);
+    });
+
+    it('returns true for 1-minute valid booking directly after now', () => {
+      expect(
+        canBook({ start: 541, end: 542, now: NOW, blocked: false, bookings: [] })
+      ).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC2: Maximum Duration Limit (<= 120 minutes)
+  // ---------------------------------------------------------------------------
+  describe('AC2: Maximum Duration Limit', () => {
+    it('T06: returns true for a booking of exactly 120 minutes', () => {
+      expect(
+        canBook({ start: 720, end: 840, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(true);
+    });
+
+    it('T07: returns false for a booking of 121 minutes', () => {
+      expect(
+        canBook({ start: 720, end: 841, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC3: Blocked Room State
+  // ---------------------------------------------------------------------------
+  describe('AC3: Blocked Room State', () => {
+    it('T13: returns false when the room is blocked', () => {
+      expect(
+        canBook({ start: 660, end: 720, now: NOW, blocked: true, bookings: defaultBookings })
+      ).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC4: Existing Bookings Overlap
+  // ---------------------------------------------------------------------------
+  describe('AC4: Existing Bookings Overlap', () => {
+    it('T01: returns true when touching existing booking after', () => {
+      expect(
+        canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(true);
+    });
+
+    it('T08: returns true when touching existing booking before', () => {
+      expect(
+        canBook({ start: 570, end: 600, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(true);
+    });
+
+    it('T09: returns false for partial overlap with an existing booking', () => {
+      expect(
+        canBook({ start: 630, end: 690, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T10: returns false when requested booking completely encloses existing booking', () => {
+      expect(
+        canBook({ start: 570, end: 690, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T11: returns false when requested booking is inside existing booking', () => {
+      expect(
+        canBook({ start: 615, end: 645, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T12: returns false for an identical time slot', () => {
+      expect(
+        canBook({ start: 600, end: 660, now: NOW, blocked: false, bookings: defaultBookings })
+      ).toBe(false);
+    });
+
+    it('T14: returns true when bookings array is empty', () => {
+      expect(
+        canBook({ start: 630, end: 690, now: NOW, blocked: false, bookings: [] })
+      ).toBe(true);
+    });
+
+    it('X2: returns true when slot fits precisely between two adjacent bookings', () => {
+      const adjacentBookings: Interval[] = [
+        { start: 600, end: 660 },
+        { start: 720, end: 780 },
+      ];
+      expect(
+        canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings: adjacentBookings })
+      ).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC5: Data Immutability
+  // ---------------------------------------------------------------------------
+  describe('AC5: Data Immutability', () => {
+    it('does not mutate input parameters or frozen bookings array', () => {
+      const originalBookings: readonly Interval[] = Object.freeze([
+        Object.freeze({ start: 600, end: 660 }),
+        Object.freeze({ start: 720, end: 780 }),
+      ]);
+
+      const result = canBook({
+        start: 660,
+        end: 720,
+        now: NOW,
+        blocked: false,
+        bookings: originalBookings as Interval[],
+      });
+
+      expect(result).toBe(true);
+      expect(originalBookings).toHaveLength(2);
+      expect(originalBookings[0]).toEqual({ start: 600, end: 660 });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC6: Strict Output Type Contract
+  // ---------------------------------------------------------------------------
+  describe('AC6: Return Contract Consistency', () => {
+    it('returns strict boolean primitive values', () => {
+      const validResult = canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings: [] });
+      const invalidResult = canBook({ start: 500, end: 520, now: NOW, blocked: false, bookings: [] });
+
+      expect(typeof validResult).toBe('boolean');
+      expect(typeof invalidResult).toBe('boolean');
+    });
+  });
+});
+
+```
 ```
 
 ### 6.3 The final run
