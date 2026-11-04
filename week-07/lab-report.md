@@ -26,10 +26,10 @@
 
 | | |
 | --- | --- |
-| File and function (or "inside the page component") | |
-| Its inputs | |
-| What it returned | |
-| How the page used it | |
+| File and function (or "inside the page component") | inside the page component: check() in src/App.tsx |
+| Its inputs | s, e, n (start, end, now in minutes, from toMinutes), the blocked state, room.bookings |
+| What it returned | nothing; it sets the boolean ok through setResult(ok) |
+| How the page used it | result shows Available / Unavailable; the time-order error message is set in the same function |
 
 **What I changed to extract `canBook`.** Say which file it now lives in, what you moved, and why
 the behaviour did not change. Also say which file of the page now calls it. 40 words or more.
