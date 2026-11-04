@@ -75,17 +75,81 @@ five columns.
 `Vitest`, followed by the case table from section 3:
 
 ```text
-(paste here)
+Generate tests for the existing booking function using Vitest. Use AC1–AC6 and the reviewed case table below.
+
+Import the real function used by the page. Keep its code unchanged. Use fixed time and fresh fixtures. Assert exact decisions and unchanged booking data.
+
+Return the test file, run command, and AC mapping. Flag unclear requirements. We will run the tests ourselves.
+
+export type Interval = { start: number; end: number };
+
+export function canBook({
+  start,
+  end,
+  now,
+  blocked,
+  bookings,
+}: {
+  start: number;
+  end: number;
+  now: number;
+  blocked: boolean;
+  bookings: Interval[];
+}): boolean {
+  if (!(0 <= start && start < end && end <= 1440)) return false;
+  if (!(start > now)) return false;
+  if (end - start > 120) return false;
+  if (blocked) return false;
+  for (const b of bookings) {
+    if (start < b.end && end > b.start) return false;
+  }
+  return true;
+}
+
+| ID | Candidate / changed input | Expected | AC |
+| --- | --- | --- | --- | --- |
+| T01 | 660–720 (touching after) | true | AC4 |
+| T02 | 540–570 (starts now) | false | AC1 |
+| T03 | 720–720 (zero duration) | false | AC1 |
+| T04 | 750–720 (reversed) | false | AC1 |
+| T05 | 1380–1441 (past day end) | false | AC1 |
+| T06 | 720–840 (120 minutes) | true | AC2 |
+| T07 | 720–841 (121 minutes) | false | AC2 |
+| T08 | 570–600 (touching before) | true | AC4 |
+| T09 | 630–690 (partial overlap) | false | AC4 |
+| T10 | 570–690 (contains booking) | false | AC4 |
+| T11 | 615–645 (inside booking) | false | AC4 |
+| T12 | 600–660 (identical interval) | false | AC4 |
+| T13 | 660–720, blocked = true | false | AC3 |
+| T14 | 630–690, bookings = [] | true | AC4 | 
+| AC5 | an Available request — the bookings after the call equal the bookings before | true, data unchanged | AC5 |
+| X1 | 1380–1440 (ends exactly at 24:00) | true | AC1 |
+| X2 | 660–720, bookings = [{600–660}, {720–780}] | true | AC4 |
 ```
 
 **The assistant's answer: run command, AC mapping and any unclear requirements it flagged,
 pasted unedited.** Its test file goes to `suites/first/` and is not pasted here:
 
-```text
-(paste here)
 ```
+### Acceptance Criteria (AC) Mapping
 
-The first suite was saved to `suites/first/` **before** I changed anything in it: yes / no
+| AC | Description | Associated Tests |
+| --- | --- | --- |
+| **AC1** | Time interval validity ($0 \le \text{start} < \text{end} \le 1440$ and $\text{start} > \text{now}$) | T02, T03, T04, T05, X1 |
+| **AC2** | Maximum booking duration limit ($\text{end} - \text{start} \le 120$) | T06, T07 |
+| **AC3** | Blocked room status handling ($\text{blocked} = \text{true} \implies \text{false}$) | T13 |
+| **AC4** | Existing bookings overlap validation (half-open intervals $[\text{start}, \text{end})$ allow touching boundaries) | T01, T08, T09, T10, T11, T12, T14, X2 |
+| **AC5** | Pure function check — source `bookings` array data remains unchanged after evaluation | AC5 (Immutability block) |
+| **AC6** | *(Unspecified in prompt; inferred below)* | N/A |
+
+---
+
+### Unclear Requirements & Potential Risks
+
+1. **AC6 missing specification:** The prompt references "AC1–AC6", but no Acceptance Criterion 6 text or table entry was supplied. If AC6 refers to handling boundary inputs like negative values ($\text{start} < 0$) or float/NaN handling, explicit tests should be added once clarified.
+2. **Handling of `now` relative to start time:** `canBook` enforces `start > now`. This prevents bookings starting at the current exact minute (T02). If "starts right now" is intended to be permissible in production (i.e. $\text{start} \ge \text{now}$), the function implementation would require modification.
+```
+The first suite was saved to `suites/first/` **before** I changed anything in it: yes
 
 ---
 
