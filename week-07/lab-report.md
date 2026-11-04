@@ -10,9 +10,9 @@
 
 | | |
 | --- | --- |
-| Project I continue | `starter` = the provided starter |
+| Project I continue | starter |
 | Bolt project link | not shared (no Week 06 project, used the provided starter) |
-| Assistant that generated the tests (tool) | ChatGPT|
+| Assistant that generated the tests (tool) | ChatGPT |
 | Exact model | GPT-5.6 Luna |
 | Where I ran the tests | my computer |
 | Vitest version | 3.2.7 |
@@ -34,7 +34,9 @@
 **What I changed to extract `canBook`.** Say which file it now lives in, what you moved, and why
 the behaviour did not change. Also say which file of the page now calls it. 40 words or more.
 
+```text
 I moved the booking decision logic from the `check()` function in `App.tsx` into a separate file called `src/booking.ts`. I created the `canBook()` function, which receives the start time, end time, current time, blocked status, and existing bookings as input. It checks whether the requested time is valid, whether it is in the future, whether its duration is within 120 minutes, whether the room is blocked, and whether it overlaps with another booking. The `App.tsx` file now imports and calls `canBook()` when the user clicks the availability button. I kept the original conditions and their order. After the change, I tested three scenarios in the browser: 11:00–12:00 returned Available, 10:30–11:30 returned Unavailable, and a blocked room returned Unavailable. All three results matched the expected outcomes. The time conversion and error messages remain in `App.tsx`.
+```
 
 ---
 
@@ -252,19 +254,19 @@ Use the actual failure output below. Separate test repairs from implementation f
 
 While all 17 tests currently pass against the provided implementation of `canBook`, an audit reveals weak assertions, missing edge cases, and structural gaps relative to standard AC boundary requirements.
 
-### 1. Weak Assertions & Immutability Test Gaps
+### Weak Assertions & Immutability Test Gaps
 
 * **Issue in AC5:** `JSON.stringify()` checks array shape, but it does not catch object mutation (e.g., modifying properties directly or freezing objects). Additionally, `Object.freeze()` is not tested to ensure the function is strictly read-only.
 * **Defect detectable:** Mutating properties inside existing `Interval` items during the loop, or calling array mutation methods like `.sort()` or `.pop()` on frozen input arrays.
 
-### 2. Missing Boundary Conditions (AC1, AC2, AC4)
+### Missing Boundary Conditions (AC1, AC2, AC4)
 
 * **Missing AC1 Lower Bound ($start \ge 0$):** No test checks negative start times (e.g., `start: -1`).
 * **Missing AC1 Upper Bound ($start < 1440$):** No test checks $start = 1440$.
 * **Missing AC1/AC2 Duration Bounds:** Minimal valid duration (e.g., 1 minute) is not tested.
 * **Defect detectable:** A bug where `0 <= start` check is omitted, or strict inequalities like `< 1440` are relaxed to `<= 1440`.
 
-### 3. AC Alignment & AC6 Coverage
+### AC Alignment & AC6 Coverage
 
 * **AC6 Context:** AC6 typically represents defensive input handling or return contract consistency (e.g., returning strictly boolean `false` rather than falsy values like `undefined` or throwing unhandled errors when evaluating empty/invalid edge cases).
 
@@ -754,7 +756,7 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
 
 | Check | Why it stays |
 | --- | --- |
-| | |
+| none | The last run of `check_suite.py` gave 33 PASS, 0 FAIL, 0 ERROR. |
 
 ### 9.2 Original and improved suites
 
@@ -772,7 +774,9 @@ Call your function with `bookings = [{ start: 700, end: 650 }]` (a reversed exis
 and a request of 660–720. What does it return? Does any AC say what it should return? (This is
 the value you declare in `submission.yml` under `assumptions.invalid_existing_booking`.)
 
--The function returns `true` for the request from 660 to 720 when the existing booking is `{ start: 700, end: 650 }`. The reversed existing booking is ignored by the current overlap check. No acceptance criterion defines how invalid existing bookings should be handled. Therefore, I declare the assumption that invalid existing bookings are ignored.
+- With `bookings = [{ start: 700, end: 650 }]` and a request of 660–720 (`now = 540`, not blocked), `canBook` returns `true`. The overlap check is `start < b.end && end > b.start`, and here `660 < 650` is false, so the reversed booking is never counted as an overlap and is effectively ignored.
+- No AC says what should happen. AC4 only talks about overlap with an existing booking, and AC1 only validates the candidate interval, not the stored ones. The page uses fixed sample data, so it cannot produce this case today.
+- I declare the assumption `invalid_existing_booking: ignored` (the function returns `true`). Another team could reasonably choose to reject the request instead, but that would need a new acceptance criterion first.
 
 ---
 
