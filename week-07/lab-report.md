@@ -15,7 +15,7 @@
 | Assistant that generated the tests (tool) | ChatGPT|
 | Exact model | GPT-5.6 Luna |
 | Where I ran the tests | my computer |
-| Vitest version (the `RUN  v…` line of a run) | RUN  v3.2.7 |
+| Vitest version | 3.2.7 |
 | Test command | npx vitest run |
 
 ---
@@ -34,7 +34,7 @@
 **What I changed to extract `canBook`.** Say which file it now lives in, what you moved, and why
 the behaviour did not change. Also say which file of the page now calls it. 40 words or more.
 
-I moved the booking decision logic from the `check()` function in `App.tsx` into a separate file called `src/booking.ts`. I created the `canBook()` function, which receives the start time, end time, current time, blocked status, and existing bookings as input. It checks whether the requested time is valid, whether it is in the future, whether its duration is within 120 minutes, whether the room is blocked, and whether it overlaps with another booking. The `App.tsx` file now imports and calls `canBook()` when the user clicks the availability button. I kept the original conditions and their order. After the change, I tested three scenarios in the browser: 11:00–12:00 returned Available, 10:00–11:00 returned Unavailable, and a blocked room returned Unavailable. All three results matched the expected outcomes. The time conversion and error messages remain in `App.tsx`.
+I moved the booking decision logic from the `check()` function in `App.tsx` into a separate file called `src/booking.ts`. I created the `canBook()` function, which receives the start time, end time, current time, blocked status, and existing bookings as input. It checks whether the requested time is valid, whether it is in the future, whether its duration is within 120 minutes, whether the room is blocked, and whether it overlaps with another booking. The `App.tsx` file now imports and calls `canBook()` when the user clicks the availability button. I kept the original conditions and their order. After the change, I tested three scenarios in the browser: 11:00–12:00 returned Available, 10:30–11:30 returned Unavailable, and a blocked room returned Unavailable. All three results matched the expected outcomes. The time conversion and error messages remain in `App.tsx`.
 
 ---
 
@@ -216,7 +216,38 @@ The **real** terminal output of the first run of the first suite, pasted unedite
 
 The deck's improvement prompt exactly as sent, followed by the actual output from 6.1. Then paste the assistant's answer, unedited:
 
-```text
+````text
+Review this test suite against AC1–AC6 and our case table. Identify incorrect expectations, weak assertions, duplicated cases, and missing boundaries.
+
+For each proposed change, explain the requirement and the defect it could detect. Improve the tests without changing correct expectations to match buggy behavior.
+
+Use the actual failure output below. Separate test repairs from implementation fixes.
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-07/app
+
+ ✓ src/booking.test.ts (17 tests) 8ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02: returns false when start time equals now (starts now) 2ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04: returns false when start is greater than end (reversed times) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05: returns false when end time exceeds maximum 1440 minutes 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1: returns true when end time is exactly 1440 (ends at 24:00 boundary) 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06: returns true for a booking of exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07: returns false for a booking of 121 minutes (exceeds 120 min max) 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room State > T13: returns false when the room is blocked, even with a valid time slot 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T01: returns truewhen touching existing booking after (ends at 660, starts at 660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T08: returns truewhen touching existing booking before (starts at 600, ends at 600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09: returns false for a partial overlap with an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10: returns false when the requested booking completely encloses an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11: returns false when the requested booking is completely inside an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12: returns false for an identical time slot to an existing booking 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14: returns truewhen there are no existing bookings (bookings = []) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > X2: returns true when slot fits precisely between two adjacent bookings 0ms
+   ✓ canBook() unit tests > AC5: Data Immutability > ensures the bookings array and objects are not modified during invocation 1ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  16:23:54
+   Duration  595ms (transform 51ms, setup 0ms, collect 38ms, tests 8ms, environment 0ms, prepare 80ms)
+
 ## Test Suite Audit & Findings
 
 While all 17 tests currently pass against the provided implementation of `canBook`, an audit reveals weak assertions, missing edge cases, and structural gaps relative to standard AC boundary requirements.
@@ -440,7 +471,7 @@ describe('canBook() unit tests', () => {
 });
 
 ```
-```
+````
 
 ### 6.3 The final run
 
@@ -449,7 +480,34 @@ change and after restoring the correct code from section 7. Every test must pass
 is still open, leave its test failing and explain it in 9.1.
 
 ```text
-(paste here)
+
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-07/app
+
+ ✓ src/booking.test.ts (19 tests) 2ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1 AC1: returns true when end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3 AC1: a negative start is rejected (now = -10 so only 0<= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4 AC1: a booking starting one minute after now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09 AC4: returns false for a partial overlap (630–690)0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14 AC4: returns true when there are no existing bookings 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: an Available request leaves the existing bookings unchanged 0ms
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  17:14:56
+   Duration  287ms (transform 35ms, setup 0ms, collect 24ms, tests 2ms, environment 0ms, prepare 50ms)
 ```
 
 ---
@@ -462,18 +520,213 @@ error does not count as detection.
 
 | Trial | Intentional change | Detected / Survived | Failing test ID(s) | If it survived: why, and what you added |
 | --- | --- | --- | --- | --- |
-| M1 | Reject duration >= 120 instead of > 120 | Detected / Survived | | |
-| M2 | Treat touching endpoints as an overlap | Detected / Survived | | |
-| M3 | Remove the blocked-room rejection | Detected / Survived | | |
+| M1 | Reject duration >= 120 instead of > 120 | Detected | T06 | |
+| M2 | Treat touching endpoints as an overlap | Detected | T01, T08, X2 | |
+| M3 | Remove the blocked-room rejection | Detected | T13 | |
 
 **The run of each mutant, pasted unedited.** Paste the `Tests` summary line and the failing test
 names at least:
 
 ```text
-(paste here)
+M1             
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-07/app
+
+ ❯ src/booking.test.ts (19 tests | 1 failed) 6ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1 AC1: returns truewhen end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3 AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4 AC1: a booking starting one minute after now is accepted 0ms
+   × canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 4ms
+     → expected false to be true // Object.is equality
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14 AC4: returns true when there are no existing bookings 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: an Available requestleaves the existing bookings unchanged 0ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:65:9
+     63|       expect(
+     64|         canBook({ start: 720, end: 840, now: NOW, blocked: false, boo…
+     65|       ).toBe(true);
+       |         ^
+     66|     });
+     67| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 18 passed (19)
+   Start at  17:01:52
+   Duration  254ms (transform 31ms, setup 0ms, collect 24ms, tests 6ms, environment 0ms, prepare 47ms)
+
+M2
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-07/app
+
+ ❯ src/booking.test.ts (19 tests | 3 failed) 7ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1 AC1: returns true when end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3 AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4 AC1: a booking starting one minute after now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   × canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720) 4ms
+     → expected false to be true // Object.is equality
+   × canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+     → expected false to be true // Object.is equality
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14 AC4: returns true when there are no existing bookings 0ms
+   × canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+     → expected false to be true // Object.is equality
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: an Available request leaves the existing bookings unchanged 0ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:93:9
+     91|       expect(
+     92|         canBook({ start: 660, end: 720, now: NOW, blocked: false, boo…
+     93|       ).toBe(true);
+       |         ^
+     94|     });
+     95| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:99:9
+     97|       expect(
+     98|         canBook({ start: 570, end: 600, now: NOW, blocked: false, boo…
+     99|       ).toBe(true);
+       |         ^
+    100|     });
+    101| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:139:9
+    137|       expect(
+    138|         canBook({ start: 660, end: 720, now: NOW, blocked: false, boo…
+    139|       ).toBe(true);
+       |         ^
+    140|     });
+    141|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 16 passed (19)
+   Start at  17:04:11
+   Duration  267ms (transform 35ms, setup 0ms, collect 30ms, tests 7ms, environment 0ms, prepare 45ms)
+
+M3
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-07/app
+
+ ❯ src/booking.test.ts (19 tests | 1 failed) 7ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1 AC1: returns truewhen end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3 AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4 AC1: a booking starting one minute after now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   × canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 5ms
+     → expected true to be false // Object.is equality
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14 AC4: returns true when there are no existing bookings 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: an Available requestleaves the existing bookings unchanged 0ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/booking.test.ts:82:9
+     80|       expect(
+     81|         canBook({ start: 660, end: 720, now: NOW, blocked: true, book…
+     82|       ).toBe(false);
+       |         ^
+     83|     });
+     84|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 18 passed (19)
+   Start at  17:05:06
+   Duration  264ms (transform 30ms, setup 0ms, collect 25ms, tests 7ms, environment 0ms, prepare 52ms)
+
 ```
 
-All three changes reverted, and the full suite run again (section 6.3): yes / no
+All three changes reverted, and the full suite run again (section 6.3): yes
 
 ---
 
@@ -485,11 +738,11 @@ screenshot of each as `evidence/ui-1.png` … `evidence/ui-5.png`. Take **ui-4 a
 
 | # | Action | Expected observation | AC | What I observed | Pass / Fail / Not testable |
 | --- | --- | --- | --- | --- | --- |
-| U1 | Check 11:00–12:00, unblocked | Available, with the fixed sample booking | AC5 | | Pass / Fail / Not testable |
-| U2 | Enable blocked, then check again | Unavailable replaces the earlier result | AC3, AC5 | | Pass / Fail / Not testable |
-| U3 | Clear a required input and submit | Understandable validation feedback | AC6 | | Pass / Fail / Not testable |
-| U4 | Use a narrow (phone) width | Controls and result remain usable | AC6 | | Pass / Fail / Not testable |
-| U5 | Repeat the checks on the same data | Existing bookings remain unchanged | AC5 | | Pass / Fail / Not testable |
+| U1 | Check 11:00–12:00, unblocked | Available, with the fixed sample booking | AC5 | 11:00–12:00 gave Available; the 10:00–11:00 booking stayed in the list | Pass |
+| U2 | Enable blocked, then check again | Unavailable replaces the earlier result | AC3, AC5 | With “Room blocked” on, the same check showed Unavailable instead of Available | Pass |
+| U3 | Clear a required input and submit | Understandable validation feedback | AC6 | After clearing the end time, the page showed “Fill in the current time, the start and the end.” | Pass |
+| U4 | Use a narrow (phone) width | Controls and result remain usable | AC6 | At phone width the controls and the result stayed visible and usable | Pass |
+| U5 | Repeat the checks on the same data | Existing bookings remain unchanged | AC5 | After repeating the checks, the list still showed only 10:00–11:00 | Pass |
 
 ---
 
@@ -507,11 +760,11 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
 
 | Measure | First suite | Improved suite |
 | --- | --- | --- |
-| Executed / passed / failed | | |
-| Requirements with meaningful tests (AC IDs and gaps) | | |
-| Selected mutants detected | | |
-| Accepted / revised / rejected tests | | |
-| Remaining limitations | | |
+| Executed / passed / failed | 17 / 17 / 0 | 19 / 19 / 0 |
+| Requirements with meaningful tests (AC IDs and gaps) | AC1–AC5 covered; AC6 manual UI requirement not covered by unit tests | AC1–AC5 covered; AC6 checked manually in Part 7 |
+| Selected mutants detected | M1: T06; M2: T08, X2, AC5; M3: T13 | M1: T06; M2: T01, T08, X2; M3: T13 |
+| Accepted / revised / rejected tests | Original AI-generated tests; no review decisions applied | X3 and X4 accepted; shared fixture and AC5 revised; duplicate and incorrect AC6 test suggestions rejected |
+| Remaining limitations | Shared fixture; weak AC5 snapshot check; missing lower-bound and one-minute-after-now tests | Unit tests do not verify the actual mobile UI; invalid existing booking behaviour is not defined by ACs |
 
 ### 9.3 What no AC decides
 
@@ -519,7 +772,7 @@ Call your function with `bookings = [{ start: 700, end: 650 }]` (a reversed exis
 and a request of 660–720. What does it return? Does any AC say what it should return? (This is
 the value you declare in `submission.yml` under `assumptions.invalid_existing_booking`.)
 
--
+-The function returns `true` for the request from 660 to 720 when the existing booking is `{ start: 700, end: 650 }`. The reversed existing booking is ignored by the current overlap check. No acceptance criterion defines how invalid existing bookings should be handled. Therefore, I declare the assumption that invalid existing bookings are ignored.
 
 ---
 
@@ -535,3 +788,8 @@ the value you declare in `submission.yml` under `assumptions.invalid_existing_bo
      pass, M1 would have become the real behaviour." -->
 
 <!-- Write your conclusion below this line -->
+The first suite checked the upper end-of-day boundary, but it did not test a negative start time. Because of this missing case, an incorrect canBook implementation that accepted negative start times could still pass the first suite. I noticed this gap when reviewing the test cases against AC1 and added tests for the lower boundary in the improved suite.
+
+The final green run with 19 passing tests proves that the implementation satisfies the expectations covered by those tests. It does not prove that the function is correct for every possible input. Mutation testing gave additional evidence: the improved suite detected M1, M2, and M3, including the incorrect 120-minute limit and overlap condition. The five UI checks also passed, confirming the tested browser interactions.
+
+One limitation remains: AC6 was checked manually through the interface rather than automated unit tests. Also, the requirements do not clearly define how invalid existing bookings should be handled. These cases would need clearer requirements and additional tests.
