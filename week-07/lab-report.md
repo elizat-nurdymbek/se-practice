@@ -15,7 +15,7 @@
 | Assistant that generated the tests (tool) | ChatGPT|
 | Exact model | GPT-5.6 Luna |
 | Where I ran the tests | my computer |
-| Vitest version (the `RUN  v…` line of a run) | |
+| Vitest version (the `RUN  v…` line of a run) | RUN  v3.2.7 |
 | Test command | npx vitest run |
 
 ---
@@ -34,7 +34,7 @@
 **What I changed to extract `canBook`.** Say which file it now lives in, what you moved, and why
 the behaviour did not change. Also say which file of the page now calls it. 40 words or more.
 
-<!-- Write below this line -->
+I moved the booking decision logic from the `check()` function in `App.tsx` into a separate file called `src/booking.ts`. I created the `canBook()` function, which receives the start time, end time, current time, blocked status, and existing bookings as input. It checks whether the requested time is valid, whether it is in the future, whether its duration is within 120 minutes, whether the room is blocked, and whether it overlaps with another booking. The `App.tsx` file now imports and calls `canBook()` when the user clicks the availability button. I kept the original conditions and their order. After the change, I tested three scenarios in the browser: 11:00–12:00 returned Available, 10:00–11:00 returned Unavailable, and a blocked room returned Unavailable. All three results matched the expected outcomes. The time conversion and error messages remain in `App.tsx`.
 
 ---
 
@@ -46,23 +46,23 @@ for every test. **The Expected column comes from AC1–AC4, never from the code.
 
 | ID | Candidate / changed input | Expected | AC | Reason (in your words) |
 | --- | --- | --- | --- | --- |
-| T01 | 660–720 (touching after) | true | AC4 | |
-| T02 | 540–570 (starts now) | false | AC1 | |
-| T03 | 720–720 (zero duration) | false | AC1 | |
-| T04 | 750–720 (reversed) | false | AC1 | |
-| T05 | 1380–1441 (past day end) | false | AC1 | |
-| T06 | 720–840 (120 minutes) | true | AC2 | |
-| T07 | 720–841 (121 minutes) | false | AC2 | |
-| T08 | 570–600 (touching before) | true | AC4 | |
-| T09 | 630–690 (partial overlap) | false | AC4 | |
-| T10 | 570–690 (contains booking) | false | AC4 | |
-| T11 | 615–645 (inside booking) | false | AC4 | |
-| T12 | 600–660 (identical interval) | false | AC4 | |
-| T13 | 660–720, blocked = true | false | AC3 | |
-| T14 | 630–690, bookings = [] | true | AC4 | |
-| AC5 | an Available request — the bookings after the call equal the bookings before | true, data unchanged | AC5 | |
-| X1 | | | | |
-| X2 | | | | |
+| T01 | 660–720 (touching after) | true | AC4 | The new booking starts at 660, exactly when the existing booking ends, so the intervals do not overlap. |
+| T02 | 540–570 (starts now) | false | AC1 | The start time is equal to the current time (540), but a booking must start after the current time. |
+| T03 | 720–720 (zero duration) | false | AC1 | The start and end times are both 720, so the booking has zero duration. |
+| T04 | 750–720 (reversed) | false | AC1 | The end time (720) is earlier than the start time (750), so the time interval is invalid. |
+| T05 | 1380–1441 (past day end) | false | AC1 | The end time is 1441, which is greater than the maximum allowed time of 1440 minutes. |
+| T06 | 720–840 (120 minutes) | true | AC2 | The booking duration is exactly 120 minutes, which is the maximum allowed duration. |
+| T07 | 720–841 (121 minutes) | false | AC2 | The booking duration is 121 minutes, which exceeds the 120-minute limit. |
+| T08 | 570–600 (touching before) | true | AC4 | The new booking ends at 600, exactly when the existing booking starts, so the intervals do not overlap. |
+| T09 | 630–690 (partial overlap) | false | AC4 | The new booking overlaps with the existing booking from 630 to 660. |
+| T10 | 570–690 (contains booking) | false | AC4 | The new booking starts before and ends after the existing booking, so it fully overlaps it. |
+| T11 | 615–645 (inside booking) | false | AC4 | The new booking is completely inside the existing booking, so the two intervals overlap. |
+| T12 | 600–660 (identical interval) | false | AC4 | The new booking has exactly the same start and end times as the existing booking, so it overlaps completely. |
+| T13 | 660–720, blocked = true | false | AC3 | The room is blocked, so no new booking should be allowed even if the requested time is valid. |
+| T14 | 630–690, bookings = [] | true | AC4 | There are no existing bookings, so the requested valid time does not overlap with anything. |
+| AC5 | an Available request — the bookings after the call equal the bookings before | true, data unchanged | AC5 | The function should return the correct result without changing the original bookings array. |
+| X1 | 1380–1440 (ends exactly at 24:00) | true | AC1 | End = 1440 is the last allowed value, because AC1 says end ≤ 1440. It is the other side of T05 (1441). The page produces this with the “Ends at 24:00” checkbox. A defect like end < 1440 would reject it. Duration is 60 minutes, start is after now, no overlap. |
+| X2 | 660–720, bookings = [{600–660}, {720–780}] | true | AC4 | The new booking touches the first booking at 660 and the second at 720, and overlaps neither, because AC4 allows touching. The duration is 60 minutes and the start is after now. It catches code that checks only the first booking or counts touching the second one as overlap. |
 
 X1 and X2 are **your own two cases**: a boundary or a state that T01–T14 do not reach. Fill all
 five columns.
