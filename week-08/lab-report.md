@@ -18,7 +18,7 @@ grader find your answers by them. You can add rows to any table, but never remov
 | Where the skill was installed (ChatGPT / Claude web / Claude Code / prompt-only simulation) | |
 | Where I ran the tests (Bolt terminal / my computer / Codespace) | my computer |
 | Vitest version (the `RUN  v…` line of a run) | 3.2.7 |
-| Language of my booking module (`ts` or `js`) — the file I copied from `buggy/` | |
+| Language of my booking module (`ts` or `js`) — the file I copied from `buggy/` | ts |
 
 ---
 
@@ -61,11 +61,127 @@ anything. It should be green. If it is not, say why under the block.
 
 ### 2.2 The same suite on the provided canBook
 
-You copied the whole `canBook` function from `buggy/booking.ts` (or `.js`) over yours and changed
-nothing else. This is the real output:
+You copied the whole `canBook` function from `buggy/booking.ts` (or `.js`) over yours and changed nothing else. This is the real output:
 
 ```text
-(paste here)
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-08/app
+
+ ❯ src/booking.test.ts (19 tests | 4 failed) 8ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1 AC1: returns true when end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3 AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4 AC1: a booking starting one minuteafter now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   × canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720) 4ms
+     → expected false to be true // Object.is equality
+   × canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+     → expected false to be true // Object.is equality
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14 AC4: returns true when there are no existing bookings 0ms
+   × canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+     → expected false to be true // Object.is equality
+   × canBook() unit tests > AC5: Data Preservation > AC5: an Available request leaves the existing bookings unchanged 1ms
+     → expected [ { start: 600, end: 660 }, …(1) ] to deeply equal [ { start: 600, end: 660 } ]
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:93:9
+     91|       expect(
+     92|         canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings: makeBookin…
+     93|       ).toBe(true);
+       |         ^
+     94|     });
+     95| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:99:9
+     97|       expect(
+     98|         canBook({ start: 570, end: 600, now: NOW, blocked: false, bookings: makeBookin…
+     99|       ).toBe(true);
+       |         ^
+    100|     });
+    101| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/booking.test.ts:139:9
+    137|       expect(
+    138|         canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings })
+    139|       ).toBe(true);
+       |         ^
+    140|     });
+    141|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/booking.test.ts > canBook() unit tests > AC5: Data Preservation > AC5: an Available request leaves the existing bookings unchanged
+AssertionError: expected [ { start: 600, end: 660 }, …(1) ] to deeply equal [ { start: 600, end: 660 } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "end": 660,
+      "start": 600,
+    },
++   {
++     "end": 780,
++     "start": 720,
++   },
+  ]
+
+ ❯ src/booking.test.ts:154:24
+    152| 
+    153|       expect(decision).toBe(true);
+    154|       expect(bookings).toEqual(before);
+       |                        ^
+    155|     });
+    156|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 15 passed (19)
+   Start at  15:06:36
+   Duration  281ms (transform 38ms, setup 0ms, collect 34ms, tests 8ms, environment 0ms, prepare 45ms)
 ```
 
 ### 2.3 One failing test per bug
