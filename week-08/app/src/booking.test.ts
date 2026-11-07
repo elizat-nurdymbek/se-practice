@@ -138,6 +138,17 @@ describe('canBook() unit tests', () => {
         canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings })
       ).toBe(true);
     });
+        it('BUG-A AC4: returns true when touching the last of three consecutive bookings', () => {
+      const bookings: Interval[] = [
+        { start: 600, end: 630 },
+        { start: 630, end: 660 },
+        { start: 660, end: 690 },
+      ];
+
+      expect(
+        canBook({ start: 690, end: 720, now: NOW, blocked: false, bookings })
+      ).toBe(true);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -149,6 +160,21 @@ describe('canBook() unit tests', () => {
       const before = structuredClone(bookings);
 
       const decision = canBook({ start: 720, end: 780, now: NOW, blocked: false, bookings });
+
+      expect(decision).toBe(true);
+      expect(bookings).toEqual(before);
+    });
+        it('BUG-B AC5: does not mutate bookings when checking an available slot', () => {
+      const bookings = makeBookings();
+      const before = structuredClone(bookings);
+
+      const decision = canBook({
+        start: 720,
+        end: 780,
+        now: NOW,
+        blocked: false,
+        bookings,
+      });
 
       expect(decision).toBe(true);
       expect(bookings).toEqual(before);
