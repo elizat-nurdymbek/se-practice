@@ -459,27 +459,22 @@ return true;
 **The assistant's answer, pasted unedited:**
 
 ````text
-## Root cause
+### Root cause
 
 The overlap check in `canBook()` uses **inclusive** comparisons:
 
-```ts
 if (start <= b.end && end >= b.start) return false;
-```
 
 For the failing test T08, the request is 570-600 and the existing booking starts at 600. Then `end >= b.start` is `600 >= 600`, which is true, so the function returns `false`. AC4 says bookings that only touch at an endpoint must be allowed, so the comparison must be **strict** (half-open intervals `[start, end)`). The mirror case (new booking starting exactly at `b.end`) fails for the same reason.
 
-## Second defect (likely behind the other failures, "[2/4]")
+### Second defect (likely behind the other failures, "[2/4]")
 
-```ts
 bookings.push({ start, end });
-```
 
 This mutates the caller's array every time `canBook()` returns `true`, which violates **AC5** (return Available/Unavailable without changing booking data). It also causes bugs: calling `canBook()` twice with the same slot returns `true`, then `false`, because the first call "booked" it.
 
-## Minimal patch
+### Minimal patch
 
-```diff
  for (const b of bookings) {
 -  if (start <= b.end && end >= b.start) return false;
 +  if (start < b.end && end > b.start) return false;
@@ -487,13 +482,11 @@ This mutates the caller's array every time `canBook()` returns `true`, which vio
 -// keep the room's list current with the slot that was just found free
 -bookings.push({ start, end });
  return true;
-```
 
 Other ACs look fine. One thing to confirm: `start > now` rejects a request starting exactly at `now`. If your tests treat "now" as not past, change it to `start >= now`. Don't change it unless a test requires it.
 
-## Regression tests
+### Regression tests
 
-```ts
 describe("AC4/AC5 regression", () => {
   const existing = () => [{ start: 600, end: 660 }];
 
@@ -528,7 +521,6 @@ describe("AC4/AC5 regression", () => {
     expect(bookings).toEqual(snapshot);
   });
 });
-```
 
 Together these cover both endpoint cases and the overlap boundary (so the fix isn't over-corrected), plus the no-side-effects guarantee. If the UI calls `canBook()` and then separately saves the booking, check that nothing relied on the hidden `push`, since AC5 says the checker must stay read-only.
 ````
@@ -589,11 +581,11 @@ return true;
 **The assistant's answer, pasted unedited:**
 
 ````text
-# Bug diagnosis: `canBook()`
+### Bug diagnosis: `canBook()`
 
 The failing test is a confirmed AC4 defect. Reading the code also turned up a second, separate defect (AC5) that the failing test does not exercise.
 
-## Defect 1 (confirmed): touching bookings are rejected (AC4)
+#### Defect 1 (confirmed): touching bookings are rejected (AC4)
 
 **Evidence**
 - T08 expects `true` for a request of 570–600 next to an existing booking, but `canBook` returns `false`.
@@ -621,7 +613,7 @@ if (start < b.end && end > b.start) return false;
 - Case 3: existing 580–620, request 570–600 (true overlap). Expect `false`.
 - Case 4: existing 570–600, request 570–600 (identical). Expect `false`.
 
-## Defect 2 (confirmed by code reading, not by this test): the check mutates booking data (AC5)
+#### Defect 2 (confirmed by code reading, not by this test): the check mutates booking data (AC5)
 
 **Evidence**
 - `bookings.push({ start, end });` runs just before `return true`.
@@ -648,7 +640,7 @@ expect(JSON.stringify(bookings)).toBe(snapshot);
 ```
 Expected result: all three assertions pass after the fix. Before the fix, `second` is `false` and the array has grown.
 
-## Unconfirmed (not defects yet)
+#### Unconfirmed (not defects yet)
 - **AC1 and `start > now`:** a request with `start === now` is rejected. "In the past" arguably doesn't include the current minute, so check this against your spec and tests. If a test expects `start === now` to be allowed, change it to `start >= now`.
 - **AC3, AC6 and the duration check:** the duration (`> 120`), `blocked` and `start < end` checks match their criteria. AC6 (UI feedback) is outside this function, so I can't judge it from this code.
 
@@ -839,6 +831,18 @@ The change as a diff, then the real output of the **full** suite. Every test mus
 Two lines deleted before `return true;`: the `bookings.push(...)` call and the comment above it. `canBook` no longer writes into the caller's array.
 
 ```text
+diff --git a/week-08/app/src/booking.ts b/week-08/app/src/booking.ts
+index f1e2de0..9a79023 100644
+--- a/week-08/app/src/booking.ts
++++ b/week-08/app/src/booking.ts
+@@ -14,7 +14,5 @@ export function canBook({ start, end, now, blocked, bookings }: {
+   for (const b of bookings) {
+     if (start < b.end && end > b.start) return false;
+   }
+-  // keep the room's list current with the slot that was just found free
+-  bookings.push({ start, end });
+   return true;
+ }
 ```
 
 The full suite after both fixes:
@@ -874,6 +878,9 @@ The full suite after both fixes:
    Start at  02:44:18
    Duration  296ms (transform 32ms, setup 0ms, collect 27ms, tests 2ms, environment 0ms, prepare 47ms)
 ````
+
+Booking data stays unchanged (the `BUG-B` and `AC5` tests compare `bookings` with a copy taken before the call), and the endpoint-touching cases (T01, T08, X2, `BUG-A`) pass.
+
 ---
 
 ## 9. What still fails, and what AI-assisted debugging cannot do
@@ -884,12 +891,12 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
 
 | Check | Why it stays |
 | --- | --- |
-| | |
+| none | All checks passed in the final validation. |
 
 ### 9.2 One limitation of AI-assisted debugging
 
 <!-- Use something that actually happened in sections 5-8. 20 words or more. -->
--
+- Both AI assistants identified the two bugs, but they assumed an existing booking interval of 600–660 without checking the actual test fixture. I had to inspect the code and run the regression tests myself to confirm the root causes and verify that the fixes worked.
 
 ---
 
@@ -904,3 +911,4 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
      visible after the BUG-A patch: the AC5 test had been failing for the wrong reason." -->
 
 <!-- Write your conclusion below this line -->
+Both AI answers identified BUG-A and BUG-B correctly. The skill made the diagnosis more structured by organizing it into evidence, root cause, fix, and regression test, but it did not make the answer significantly more accurate. My regression tests proved that endpoint-touching bookings are accepted, actual overlaps are rejected, and checking an available slot does not modify the bookings list. After applying the two separate fixes, all 21 tests passed, but this does not prove that the entire application is bug-free or that every desktop and mobile interaction works correctly. I still had to review the suggested patches and verify the results locally.
