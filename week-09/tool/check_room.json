@@ -1,9 +1,28 @@
 {
-  "name": "",
-  "description": "",
+  "name": "check_room",
+  "description": "Checks whether a room can be booked for a requested time slot. It only checks and never saves, changes or creates a booking. All times are whole minutes since midnight, from 0 to 1440 (10:00 is 600, 24:00 is 1440). The slot must start after the current time, end after it starts, last at most 120 minutes, avoid a blocked room and not overlap existing bookings (touching is allowed). Returns Available or Unavailable.",
   "inputSchema": {
     "type": "object",
-    "properties": {},
-    "required": []
+    "properties": {
+      "start": {"type": "integer", "minimum": 0, "maximum": 1440, "description": "Requested start, in whole minutes since midnight (10:00 = 600)."},
+      "end": {"type": "integer", "minimum": 0, "maximum": 1440, "description": "Requested end, in whole minutes since midnight (24:00 = 1440)."},
+      "now": {"type": "integer", "minimum": 0, "maximum": 1440, "description": "Current time, in whole minutes since midnight."},
+      "blocked": {"type": "boolean", "description": "True if the room is blocked, false otherwise."},
+      "bookings": {
+        "type": "array",
+        "description": "Existing bookings as objects with start and end in minutes since midnight. May be empty.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "start": {"type": "integer", "minimum": 0, "maximum": 1440},
+            "end": {"type": "integer", "minimum": 0, "maximum": 1440}
+          },
+          "required": ["start", "end"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["start", "end", "now", "blocked", "bookings"],
+    "additionalProperties": false
   }
 }

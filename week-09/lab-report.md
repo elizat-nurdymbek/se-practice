@@ -5,7 +5,7 @@ them. Replace every `<!-- comment -->` with your own text (comments are ignored 
 
 **Name:** Elizat Nurdymbek
 **Student ID:** 24B031946
-**GitHub:** 2026-11-11
+**GitHub:** elizat-nurdymbek
 
 ---
 
@@ -23,14 +23,50 @@ them. Replace every `<!-- comment -->` with your own text (comments are ignored 
 Paste your final `tool/check_room.json`, then fill the table: one row per constraint you wrote.
 
 ```json
-
+{
+  "name": "check_room",
+  "description": "Checks whether a room can be booked for a requested time slot. It only checks and never saves, changes or creates a booking. All times are whole minutes since midnight, from 0 to 1440 (10:00 is 600, 24:00 is 1440). The slot must start after the current time, end after it starts, last at most 120 minutes, avoid a blocked room and not overlap existing bookings (touching is allowed). Returns Available or Unavailable.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start": {"type": "integer", "minimum": 0, "maximum": 1440, "description": "Requested start, in whole minutes since midnight (10:00 = 600)."},
+      "end": {"type": "integer", "minimum": 0, "maximum": 1440, "description": "Requested end, in whole minutes since midnight (24:00 = 1440)."},
+      "now": {"type": "integer", "minimum": 0, "maximum": 1440, "description": "Current time, in whole minutes since midnight."},
+      "blocked": {"type": "boolean", "description": "True if the room is blocked, false otherwise."},
+      "bookings": {
+        "type": "array",
+        "description": "Existing bookings as objects with start and end in minutes since midnight. May be empty.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "start": {"type": "integer", "minimum": 0, "maximum": 1440},
+            "end": {"type": "integer", "minimum": 0, "maximum": 1440}
+          },
+          "required": ["start", "end"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["start", "end", "now", "blocked", "bookings"],
+    "additionalProperties": false
+  }
+}
 ```
 
 | Field | Constraint (e.g. `"type": "integer"`, `"maximum": 1440`) | What goes wrong without it |
 | --- | --- | --- |
-| | | |
-| | | |
-| | | |
+| name | check_room | The model may call a tool with the wrong name. |
+| description | 25+ words, minutes, 1440, does not save | The model may misunderstand the units and assume it creates bookings. |
+| start | integer, minimum 0, maximum 1440 | Invalid or fractional start times may be accepted. |
+| end | integer, minimum 0, maximum 1440 | Invalid end values and time strings may be accepted. |
+| now | integer, minimum 0, maximum 1440 | The current time may be missing or invalid. |
+| blocked | boolean | A string such as "false" may be interpreted incorrectly. |
+| bookings | array | Existing bookings may have the wrong structure. |
+| bookings.items | object | A booking represented as [660,720] may be accepted. |
+| booking.start/end | integer, minimum 0, maximum 1440 | Booking times may be invalid. |
+| booking.required | start, end | An incomplete booking may be accepted. |
+| required | all five fields | A tool call may omit a required argument. |
+| additionalProperties | false | The model may invent unsupported fields such as room. |
 
 ## 3. The twelve calls — first run and final run
 
@@ -39,18 +75,18 @@ say what you changed.
 
 | Case | First run | Final run | What you changed |
 | --- | --- | --- | --- |
-| S01 | PASS | | |
-| S02 | PASS | | |
-| S03 | FAIL | | |
-| S04 | FAIL | | |
-| S05 | FAIL | | |
-| S06 | FAIL | | |
-| S07 | FAIL | | |
-| S08 | FAIL | | |
-| S09 | FAIL | | |
-| S10 | FAIL | | |
-| S11 | PASS | | |
-| S12 | FAIL | | |
+| S01 | PASS | PASS | No change needed |
+| S02 | PASS | PASS | No change needed |
+| S03 | FAIL | PASS | Added integer type for end |
+| S04 | FAIL | PASS | Added now to required fields |
+| S05 | FAIL | PASS | Added additionalProperties: false |
+| S06 | FAIL | PASS | Added minimum: 0 |
+| S07 | FAIL | PASS | Added maximum: 1440 |
+| S08 | FAIL | PASS | Required start and end in each booking |
+| S09 | FAIL | PASS | Added boolean type for blocked |
+| S10 | FAIL | PASS | Added integer type for time values |
+| S11 | PASS | PASS | No change needed |
+| S12 | FAIL | PASS | Added object type for booking items |
 
 ## 4. Function calling — what the model wrote
 
