@@ -122,21 +122,28 @@ The phrase “a couple of hours” suggests an approximate duration of 120 minut
 
 ## 5. What the schema cannot check
 
-<!-- Name the acceptance criteria (AC1-AC6, README section 3) that a JSON Schema with the allowed keywords cannot
-     enforce, and say why for each. At least two, by their AC number. Which part of AC1 CAN the schema enforce? -->
+<!-- Name the acceptance criteria (AC1-AC6, README section 3) that a JSON Schema with the allowed keywords cannot enforce, and say why for each. At least two, by their AC number. Which part of AC1 CAN the schema enforce? -->
+
+The JSON schema checks the structure and basic types of the input, but it cannot verify every business rule.
+
+- For AC1, the schema can check that start and end are integers between 0 and 1440 using minimum and maximum. However, it cannot compare the two fields. For example, start: 600 and end: 600 can still pass schema validation, even though the start must be earlier than the end. It also cannot check whether start is later than now.
+- For AC2, the duration must not exceed 120 minutes. This requires calculating end - start, which the schema cannot do. For example, the R2 interval from 840 to 990 lasts 150 minutes, but both values are valid integers within the allowed range.
+- For AC4, the requested interval must be compared with every booking in the bookings array. The schema cannot perform these comparisons or determine whether two intervals overlap. The function must handle this rule while allowing intervals that only touch.
+- The schema also cannot decide whether a room is actually unavailable under AC3. It can only check that blocked is a boolean. AC5 requires checking the function's behavior to ensure it does not change or save data. AC6 concerns feedback displayed by the page, so it must be tested through the user interface.
+- Therefore, the schema validates the form of the input, while canBook must validate its meaning and business rules.
 
 ## 6. Permissions — allow, ask or block
 
 | # | Action | Decision (allow / ask / block) | Reason (the risk, in one sentence or more) |
 | --- | --- | --- | --- |
-| A1 | call `check_room` with the times the user just typed | | |
-| A2 | read `week-08/app/src/booking.ts` | | |
-| A3 | edit `booking.ts` to raise the 120-minute limit to 180 | | |
-| A4 | run `npm test` in `week-08/app` | | |
-| A5 | run `git reset --hard` to undo its own last three edits | | |
-| A6 | `git commit` its change on the `week-09` branch | | |
-| A7 | `git push` to `main` | | |
-| A8 | send the contents of `.env` to an MCP server it found online | | |
+| A1 | call `check_room` with the times the user just typed | allow | The check_room tool is read-only and does not create or modify bookings. It is safe to call when all required arguments are available and valid. |
+| A2 | read `week-08/app/src/booking.ts` | allow | Reading booking.ts inside the project's own repository only inspects existing code and does not change the working files. |
+| A3 | edit `booking.ts` to raise the 120-minute limit to 180 | ask | Increasing the limit from 120 to 180 minutes changes the business rule in AC2. The specification owner should approve this change because existing tests and documentation would no longer match. |
+| A4 | run `npm test` in `week-08/app` | allow | Running npm test in the known week-08/app folder is a reasonable local verification step. The command executes project scripts, so it should remain limited to this trusted project directory. |
+| A5 | run `git reset --hard` to undo its own last three edits | ask | git reset --hard can discard uncommitted changes in tracked files, including work that belongs to the user rather than the agent. Confirmation is needed before using it. |
+| A6 | `git commit` its change on the `week-09` branch | allow | Creating a commit on the dedicated week-09 branch is a local and reviewable action. It does not publish changes to the shared main branch. |
+| A7 | `git push` to `main` | block | Pushing directly to main bypasses the required pull request review and violates the instruction not to merge the submission. |
+| A8 | send the contents of `.env` to an MCP server it found online | block | An unknown external MCP server is not a trusted destination for .env contents. The file may contain API keys or tokens, so sending it could expose secrets. |
 
 ## 7. Checkpoint
 
