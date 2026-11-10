@@ -95,26 +95,30 @@ For each request, paste the model's reply exactly, then judge it against the req
 ### R1
 
 ```text
-
+{"name":"check_room","arguments":{"start":600,"end":660,"now":540,"blocked":false,"bookings":[{"start":660,"end":720}]}}
 ```
 
 <!-- Match? If F3 failed, which argument differs, and who was wrong: the model or the request? -->
+Match: YES. All values match the request: 9:00 = 540 (now), 10:00 = 600 (start), 11:00 = 660 (end), and the existing booking from 11:00 to 12:00 = 660–720. The model correctly represented bookings as an object containing start and end. The existing booking starts exactly when the requested slot ends. These intervals only touch, so the request is valid under AC4. No values were invented.
 
 ### R2
 
 ```text
-
+{"name":"check_room","arguments":{"start":840,"end":990,"now":810,"blocked":true,"bookings":[]}}
 ```
 
 <!-- Same. R2 is a call that SHOULD be made, although canBook will say Unavailable. Did the model refuse to call? -->
+Match: YES. The model correctly converted the times: 13:30 = 810, 14:00 = 840, and 16:30 = 990. It also correctly set blocked to true and used an empty bookings array. The model should call the tool even when the room is blocked because the function is responsible for returning the availability result. The requested slot lasts 150 minutes, which exceeds the 120-minute limit. Therefore, the function should return Unavailable for two reasons: AC2 (duration limit) and AC3 (blocked room). The schema validates the integer values but cannot check the duration rule. No values were invented.
 
 ### R3
 
 ```text
-
+What time tomorrow afternoon would you like the room (start and end time)?
 ```
 
 <!-- What information was missing? Did the model ask, or call? If it called, which values did it invent, and from where? -->
+The model asked a clarification question instead of calling the tool. This was reasonable because the request did not provide exact start and end times. However, other required arguments were also missing: now, blocked, and bookings. The model asked only about the requested time, so additional information would still be needed before all five arguments could be filled.
+The phrase “a couple of hours” suggests an approximate duration of 120 minutes, but “afternoon” does not specify an exact time. The word “tomorrow” also cannot be represented by the current tool schema because it has no date field; now is expressed only as minutes since midnight. The model did not invent any values, but its clarification question was incomplete.
 
 ## 5. What the schema cannot check
 
