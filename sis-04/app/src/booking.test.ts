@@ -60,13 +60,13 @@ describe('canBook() unit tests', () => {
   // AC2: a booking longer than 120 minutes is rejected
   // ---------------------------------------------------------------------------
   describe('AC2: Maximum Duration Limit', () => {
-    it('T06 AC2: returns true for exactly 120 minutes', () => {
+    it('T06 B1 AC2: returns true for exactly 120 minutes', () => {
       expect(
         canBook({ start: 720, end: 840, now: NOW, blocked: false, bookings: makeBookings() })
       ).toBe(true);
     });
 
-    it('T07 AC2: returns false for 121 minutes', () => {
+    it('T07 B2 AC2: returns false for 121 minutes', () => {
       expect(
         canBook({ start: 720, end: 841, now: NOW, blocked: false, bookings: makeBookings() })
       ).toBe(false);
@@ -88,7 +88,7 @@ describe('canBook() unit tests', () => {
   // AC4: overlap with an existing booking is rejected; touching is allowed
   // ---------------------------------------------------------------------------
   describe('AC4: Existing Bookings Overlap', () => {
-    it('T01 AC4: returns true when touching the existing booking after (660–720)', () => {
+    it('T01 B3 AC4: returns true when touching the existing booking after (660–720)', () => {
       expect(
         canBook({ start: 660, end: 720, now: NOW, blocked: false, bookings: makeBookings() })
       ).toBe(true);
@@ -100,7 +100,7 @@ describe('canBook() unit tests', () => {
       ).toBe(true);
     });
 
-    it('T09 AC4: returns false for a partial overlap (630–690)', () => {
+    it('T09 B4 AC4: returns false for a partial overlap (630–690)', () => {
       expect(
         canBook({ start: 630, end: 690, now: NOW, blocked: false, bookings: makeBookings() })
       ).toBe(false);
