@@ -12,3 +12,5 @@ button { margin-top: 1rem; padding: 0.6rem 1.2rem; border: 0; border-radius: 8px
   .page { margin: 0; border-radius: 0; }
   .row { flex-direction: column; }
 }
+.empty { padding: 12px; border: 1px dashed #999; border-radius: 6px; }
+.equipment { display: flex; flex-wrap: wrap; gap: 8px 16px; border: 1px solid #ccc; border-radius: 6px; }
