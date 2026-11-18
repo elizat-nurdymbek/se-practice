@@ -68,6 +68,9 @@ export default function App() {
         <p className="empty">No rooms match: try fewer attendees or less equipment.</p>
       ) : (
         <>
+          <p className="matches">
+            {filtered.length} matching room(s): {filtered.map(r => r.name).join(', ')}
+          </p>
           <div className="row">
             <label>Room
               <select value={room?.id} onChange={e => setRoomId(e.target.value)}>
