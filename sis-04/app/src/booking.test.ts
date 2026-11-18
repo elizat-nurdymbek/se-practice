@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { canBook, type Interval } from './booking';
+import { canBook } from './booking';
+import type { Interval } from './rooms';
 
 describe('canBook() unit tests', () => {
   // Fixed current time for every test: 09:00

@@ -1,12 +1,13 @@
-export type Interval = { start: number; end: number };
+import type { Interval } from './rooms';
 
 export function canBook({ start, end, now, blocked, bookings }: {
   start: number;
   end: number;
   now: number;
   blocked: boolean;
-  bookings: { start: number; end: number }[];
+  bookings: Interval[];
 }): boolean {
+  
   if (!(0 <= start && start < end && end <= 1440)) return false;
   if (!(start > now)) return false;
   if (end - start > 120) return false;
