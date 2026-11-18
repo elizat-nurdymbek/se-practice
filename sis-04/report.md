@@ -2,21 +2,15 @@
 
 ## 1. Setup and starting point
 
-<!-- Model: the exact model with its version, as the tool shows it ("ChatGPT" is a tool, not a
-     model). If the tool does not show it, write: not displayed
-     Starting point: week-08 | week-07 | sis-03 | starter   (README section 3)
-     Baseline commit: the commit that brings your starting point into sis-04/app/ UNCHANGED —
-     git rev-parse --short HEAD right after that commit. It is your "initial version". -->
-
 | Item | Value |
 | --- | --- |
 | Assistant (tool) | ChatGPT |
 | Assistant model | GPT-6 |
 | Starting point | week-08 |
-| Baseline commit | (write here) |
-| Language (ts or js) | (write here) |
-| Vitest version | (write here) |
-| Where I ran the tests | (write here) |
+| Baseline commit | 4235df7 |
+| Language (ts or js) | ts |
+| Vitest version | 3.2.7 |
+| Where I ran the tests | local macOS terminal |
 
 ### 1.1 Baseline run
 
@@ -57,50 +51,93 @@
 
 ### 2.1 Repository map
 
-<!-- The concise map you gave the assistant: the files that matter and one line each on what
-     they do. A tree is fine:  src/App.tsx — the page, holds the rooms and the form … -->
-
 ```text
-(paste here)
+sis-04/app
+├── index.html          Vite entry page
+├── package.json        scripts and dependencies (react, vite, vitest)
+├── tsconfig.json, vite.config.ts   build / test configuration
+└── src/
+    ├── main.tsx        mounts <App /> into the page
+    ├── App.tsx         the whole page: ROOMS data, Room type, form state, toMinutes/fmt helpers,
+                        check() handler, rendering of the result and bookings list
+    ├── booking.ts      canBook({start,end,now,blocked,bookings}): AC1–AC4, no mutation (AC5)
+    ├── booking.test.ts 21 Vitest tests for canBook (T01–T14, X1–X4, BUG-A, BUG-B)
+    └── index.css       page styles (AC6)
 ```
 
 ### 2.2 The context message as sent
 
-<!-- The whole first message of your analysis chat: the map, AC1–AC6, F1–F5 and the constraints
-     (no login, payments, live APIs or database; fictional data only). Unedited. -->
-
 ```text
-(paste here)
+I am extending a small React + TypeScript + Vitest app (Smart Campus Room Availability Checker).
+I want a maintainability analysis and a plan of small steps. Do NOT write code and do NOT propose
+a full rewrite.
+
+Repository map:
+- src/main.tsx: mounts App
+- src/App.tsx: the whole page. Holds ROOMS data (2 rooms: id, name, blocked, bookings), type Room
+  and type Interval, form state (roomId, now, blocked checkbox, start, end, endOfDay, result,
+  error), helpers toMinutes and fmt, the check() handler, rendering.
+- src/booking.ts: canBook({start,end,now,blocked,bookings}) with AC1-AC4, no mutation.
+- src/booking.test.ts: 21 Vitest tests for canBook, all passing (baseline 21/21).
+- src/index.css: styles.
+
+Existing criteria that must stay true:
+AC1 Reject start >= end and requests in the past.
+AC2 Enforce the maximum duration (120 minutes).
+AC3 Reject a blocked room.
+AC4 Reject overlaps; allow bookings that only touch at endpoints.
+AC5 Return Available / Unavailable without changing booking data.
+AC6 Clear, responsive feedback on desktop and mobile.
+
+New requirements:
+Catalog of at least 4 fictional rooms, each with id, name, capacity, equipment list, blocked
+status and its own bookings.
+F1 Capacity filter: room capacity >= requested attendees.
+F2 Equipment filter: the room must contain ALL selected items.
+F3 A blocked room cannot be reported as available.
+F4 Clear empty state when no rooms match.
+F5 Changing the selected room must refresh the availability result.
+The availability check must use the chosen room's bookings, not another room's data.
+
+Fixed target layout: src/rooms.ts (Room type + ROOMS), src/filter.ts (filterRooms),
+src/booking.ts (canBook unchanged + checkRoom(rooms, roomId, request) that calls canBook),
+UI imports the rules and holds no rules or room data.
+
+Constraints: fictional data only; fixed current time; no login, payments, live APIs, database,
+network calls or browser storage.
+
+Please give me:
+1. Maintainability risks, each with the file and function it is in and what evidence I can check
+   myself in the code.
+2. A prioritised plan of small steps, smallest safe step first, with the tests to run after each.
+Do not write implementation code.
 ```
 
 ## 3. Codebase analysis (Task 1)
 
 ### 3.1 Maintainability risks
 
-<!-- At least three, found in YOUR starting code. "Where" names a file or a function(),
-     e.g. src/App.tsx, check(). Evidence is what you saw, not what the assistant said.
-     Priority: High / Medium / Low. -->
-
 | # | Risk | Where (file / function) | Evidence | Priority |
 | --- | --- | --- | --- | --- |
-| 1 | (write here) | (write here) | (write here) | High / Medium / Low |
-| 2 | (write here) | (write here) | (write here) | High / Medium / Low |
-| 3 | (write here) | (write here) | (write here) | High / Medium / Low |
+| 1 | Room data and UI responsibilities are mixed | src/App.tsx | The ROOMS array, Room type, form state, helper functions and UI rendering are in the same component file | High |
+| 2 | Room-specific blocked status is not used by the availability handler | rc/App.tsx, check() | check() passes the separate blocked state variable to canBook() instead of using the selected room's blocked property | High |
+| 3 | Availability result can become stale after room selection changes | src/App.tsx, room select onChange | The room selector updates roomId, but does not reset or recompute result | High |
+| 4 | Time validation is duplicated in the UI and booking module | src/App.tsx, check() and src/booking.ts | check() checks start and end ordering, and canBook() also validates the interval | Medium |
+| 5 | Interval type is duplicated across module boundaries | src/App.tsx and src/booking.ts | App.tsx defines Interval, while booking.ts separately describes booking intervals in its parameter type | Low |
 
 ### 3.2 Improvement plan — before editing
 
-<!-- Numbered, in the order you will do it, smallest safe step first. Written BEFORE you change
-     code: the commit that adds this section comes before the commit that changes app/src. -->
-
-1. (write here)
-2. (write here)
-3. (write here)
+1. Extract the Room and Interval types and create a catalog of at least four fictional rooms in src/rooms.ts. Include capacity, equipment, blocked status and bookings. Preserve the existing canBook() behavior. Run the existing 21 tests after the change.
+2. Add checkRoom() in src/booking.ts. It should find the selected room, handle unknown room IDs, and use that room's blocked status and bookings. Add tests for room selection, blocked rooms and non-mutation. Run the full Vitest suite.
+3. Create src/filter.ts with filterRooms(). Implement capacity and equipment filtering, requiring all selected equipment. Add tests for matching rooms and empty results. Run the full Vitest suite.
+4. Refactor src/App.tsx to use the separate rooms, booking and filter modules. Add capacity and equipment controls, a clear empty state, and remove the separate blocked checkbox. Run Vitest and TypeScript checks.
+5. Fix the stale availability result when the selected room changes or is filtered out. Verify AC1–AC6 and F1–F5 manually, inspect desktop and mobile layouts, and capture the required screenshots.
 
 ### 3.3 One AI suggestion I rejected or modified
 
 | Suggestion (as the assistant made it) | Decision | Why — with the AC, F-rule, test or file behind it |
 | --- | --- | --- |
-| (write here) | Rejected / Modified | (write here) |
+| Rewrite or modify the existing canBook() function while implementing the new features. | Modified| I decided to keep canBook() unchanged because the original implementation passed all 21 baseline tests. I will add checkRoom() separately to reduce regression risk and preserve AC1–AC5 |
 
 ## 4. Feature extension (Task 2)
 
