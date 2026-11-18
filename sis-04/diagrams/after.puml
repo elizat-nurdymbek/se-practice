@@ -1,0 +1,18 @@
+@startuml
+title After: separated modules
+component "main.tsx" as main
+component "App.tsx (UI)" as App
+component "rooms.ts\n(Room, Interval, ROOMS)" as rooms
+component "booking.ts\n(canBook, checkRoom)" as booking
+component "filter.ts\n(filterRooms)" as filter
+component "tests\n(booking, checkRoom, filter, integration)" as tests
+main --> App
+App --> rooms : ROOMS
+App --> filter : filterRooms
+App --> booking : checkRoom
+booking --> rooms : types
+filter --> rooms : types
+tests --> booking
+tests --> filter
+tests --> rooms : types
+@enduml

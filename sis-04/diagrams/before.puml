@@ -1,0 +1,10 @@
+@startuml
+title Before: week-08 baseline
+component "main.tsx" as main
+component "App.tsx\n(ROOMS data, Room and Interval types,\ntoMinutes, fmt, check())" as App
+component "booking.ts\n(canBook, Interval)" as booking
+component "booking.test.ts" as test
+main --> App
+App --> booking : canBook
+test --> booking
+@enduml
