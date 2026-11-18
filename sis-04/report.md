@@ -395,12 +395,9 @@ filterRooms for the list, empty state when no rooms match.
 
 ## 9. Checker results and known fails
 
-<!-- Every check still FAIL or ERROR in your last run of python tests/check_sis.py, and why.
-     The same IDs go in submission.yml known_fails. None left? Write: none. -->
-
 | Check | Why it still fails |
 | --- | --- |
-| (write here) | (write here) |
+| none | none |
 
 ## 10. AI reflection (Task 6)
 
