@@ -368,13 +368,13 @@ categories. **Score = L × I.** **Component** is a path inside `app/` or `missin
 
 | ID | Category | Cause → event → consequence | Component | Evidence | Status | L | I | Score | Mitigation | Owner | Verification |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| R1 | Correctness | Invalid time input shows both an error and Unavailable. | src/App.tsx, check() | confirmed | 3 | 2 | 6 | Extract pure `evaluateRequest` into `src/booking.ts`; distinguish invalid, available and unavailable results | me | Regression test R1 fails before and passes after mitigation; manual UI check |
-| R2 | Agent operations | The agent may deploy an unapproved build to production. | AGENTS.md, line 38 | confirmed | 2 | 3 | 6 | Remove deployment instruction and require human approval | me | `check_audit.py`: C5 and A3 pass |
-| R3 | Privacy | The playbook allows real room data, Supabase and login, which conflict with the project scope. | AGENTS.md, lines 12 and 33 | confirmed | 2 | 2 | 4 | Require one fictional room and prohibit database and login | me | C1 and C2 pass |
-| R4 | Agent operations | The playbook requires a test command that does not exist. | AGENTS.md, package.json | confirmed | 3 | 2 | 6 | Replace with `npm test` and require tests before acceptance | me | A3 and C6 pass |
-| R5 | Security | Vulnerable development dependencies may affect the developer or agent environment. | npm audit | confirmed | 1 | 3 | 3 | Defer dependency upgrades; avoid `npm audit fix --force` because it proposes breaking major upgrades | me | Repeat `npm audit` after planned dependency updates |
-| R6 | Maintainability | UI changes may introduce bugs because UI behavior has no automated tests. | src and package.json | confirmed | 2 | 2 | 4 | Add focused UI tests in a future task; test extracted booking logic in this lab | me | Tests for `evaluateRequest` |
-| R7 | Correctness | The blocked checkbox is global and is not connected to a specific room. | src/App.tsx | confirmed | 2 | 2 | 4 | Store blocked state per room in a future task | me | Manual room-switching check |
+| R1 | Correctness | Invalid time input shows both an error and Unavailable. | src/App.tsx, check() | Reproduced in the browser with start = end; setResult(ok) ran after setError | confirmed | 3 | 2 | 6 | Extract pure `evaluateRequest` into `src/booking.ts`; distinguish invalid, available and unavailable results | me | Regression test R1 fails before and passes after mitigation; manual UI check |
+| R2 | Agent operations | The agent may deploy an unapproved build to production. | AGENTS.md, line 38 | Line with npx netlify deploy --prod, found with grep | confirmed | 2 | 3 | 6 | Remove deployment instruction and require human approval | me | `check_audit.py`: C5 and A3 pass |
+| R3 | Privacy | The playbook allows real room data, Supabase and login, which conflict with the project scope. | AGENTS.md, lines 12 and 33 | Lines with “real timetable” and “Supabase”, found with grep | confirmed | 2 | 2 | 4 | Require one fictional room and prohibit database and login | me | C1 and C2 pass |
+| R4 | Agent operations | The playbook requires a test command that does not exist. | AGENTS.md, package.json | npm run test:unit returns Missing script; package.json has only test | confirmed | 3 | 2 | 6 | Replace with `npm test` and require tests before acceptance | me | A3 and C6 pass |
+| R5 | Security | Vulnerable development dependencies may affect the developer or agent environment. | package.json | npm audit: 5 vulnerabilities, all in devDependencies | confirmed | 1 | 3 | 3 | Defer dependency upgrades; avoid `npm audit fix --force` because it proposes breaking major upgrades | me | Repeat `npm audit` after planned dependency updates |
+| R6 | Maintainability | UI changes may introduce bugs because UI behavior has no automated tests. | src and package.json | No testing-library, jsdom or playwright in package.json; only booking.test.ts in src | confirmed | 2 | 2 | 4 | Add focused UI tests in a future task; test extracted booking logic in this lab | me | Tests for `evaluateRequest` |
+| R7 | Correctness | The blocked checkbox is global and is not connected to a specific room. | src/App.tsx | Reproduced: marked blocked, switched room, the checkbox stayed | confirmed | 2 | 2 | 4 | Store blocked state per room in a future task | me | Manual room-switching check |
 
 ### 4.2 The top two for action
 
@@ -412,9 +412,8 @@ Two confirmed risks, highest score first, each with the evidence that justifies 
 
 **Missing evidence for the next level:**
 
-<!-- Name the rows and what would have to exist. Then one or two lines on the README's accuracy
-     and the folder layout. -->
--For Level 1, only 3 out of 5 checks passed (60%). The required threshold is 80%, so at least 4 checks must pass. The project needs additional development tools and documentation to improve its readiness.
+- Level 1 has 3 of 5 rows (60%); 4 of 5 are needed. Missing: 1a (formatter: add Prettier) and 1b (linter: add ESLint); adding either one reaches 80%. Level 2 would additionally need 2a (.env.example) and 2b (architecture notes in a README).
+- app/ has no README, so 2b is no. The folder layout is clear: src/ holds App.tsx, booking.ts and booking.test.ts.
 
 ---
 
@@ -570,9 +569,8 @@ One row per missing or conflicting rule the answer reported, plus any it missed.
 `git diff app/AGENTS.md`, after you applied only what you approved:
 
 ```text
-nurdymbekelizat@MacBook-Air-Nurdymbek week-10 % git diff app/AGENTS.md      
 diff --git a/week-10/app/AGENTS.md b/week-10/app/AGENTS.md
-index b786d88..30ede77 100644
+index b786d88..8c2fc02 100644
 --- a/week-10/app/AGENTS.md
 +++ b/week-10/app/AGENTS.md
 @@ -9,30 +9,31 @@ A React + TypeScript page (Vite) that tells a student whether a campus room is f
@@ -587,8 +585,7 @@ index b786d88..30ede77 100644
  - AC1 Reject start ≥ end and requests in the past.
  - AC2 Enforce the maximum allowed duration (120 minutes).
  - AC3 Reject a blocked room.
--- AC4 Reject overlaps. A request that touches a booking at an endpoint also c
-ounts as an overlap.
+-- AC4 Reject overlaps. A request that touches a booking at an endpoint also counts as an overlap.
 +- AC4 Reject overlaps; allow bookings that only touch at endpoints.
  - AC5 Return Available / Unavailable without changing booking data.
 +- AC6 Preserve clear UI feedback on desktop and mobile.
@@ -611,11 +608,9 @@ ounts as an overlap.
  ## Before you finish
  
  - Make sure the page still loads.
--- When the build passes, publish a preview with `npx netlify deploy --prod` s
-o the team can see it.
-+- Run `npm test` and `npm run build`, and propose acceptance only if both pas
-s. Never deploy to an external service.
-(END)
+-- When the build passes, publish a preview with `npx netlify deploy --prod` so the team can see it.
++- Run `npm test` and `npm run build`; both must pass before proposing a change as done. Never deploy to an external service.
+\ No newline at end of file
 ```
 
 ---
@@ -696,11 +691,15 @@ The test fails because evaluateRequest doesn't exist yet, meaning there's no cor
 | View | Width | What I checked | Result | Screenshot |
 | --- | --- | --- | --- | --- |
 | Desktop | 1440px | Entered start = end and a valid booking request. Checked message readability, clipping and overlapping elements. | messages are read, but when start = end both error and Unavailable are shown, this is R1 | `evidence/ui-desktop.png` |
-| Mobile | 393 × 852 (DevTools viewport) | Entered start = end and a valid booking request. Checked field layout, message readability, clipping and overlapping elements. | alid request shows Available, start = end shows both messages, nothing cut off | `evidence/ui-mobile.png` |
+| Mobile | 393 × 852 (DevTools viewport) | Entered start = end and a valid booking request. Checked field layout, message readability, clipping and overlapping elements. | Valid request shows Available, start = end shows both messages, nothing cut off | `evidence/ui-mobile.png` |
 
 ### 7.3 Tests and checks I did not run
 
-- Automatic UI/component tests App.tsx: they are not in the project (this is R6);
+- Automatic UI/component tests for App.tsx: they do not exist in the project (R6).
+- A real phone and other browsers: I only used Chrome DevTools emulation and a desktop window.
+- `npm audit fix`: not run, it needs --force and breaking upgrades (R5).
+- Deployment to Netlify: deliberately not run (R2).
+- `ROOMS` in App.tsx still contains two rooms (A-101, B-204) while the scope says one room. I did not change the application code for this.
 
 ---
 
@@ -820,9 +819,8 @@ index 9a79023..1755a56 100644
 The diff I approved (`git diff`):
 
 ```text
-nurdymbekelizat@MacBook-Air-Nurdymbek week-10 % git diff app/AGENTS.md      
 diff --git a/week-10/app/AGENTS.md b/week-10/app/AGENTS.md
-index b786d88..30ede77 100644
+index b786d88..8c2fc02 100644
 --- a/week-10/app/AGENTS.md
 +++ b/week-10/app/AGENTS.md
 @@ -9,30 +9,31 @@ A React + TypeScript page (Vite) that tells a student whether a campus room is f
@@ -837,8 +835,7 @@ index b786d88..30ede77 100644
  - AC1 Reject start ≥ end and requests in the past.
  - AC2 Enforce the maximum allowed duration (120 minutes).
  - AC3 Reject a blocked room.
--- AC4 Reject overlaps. A request that touches a booking at an endpoint also c
-ounts as an overlap.
+-- AC4 Reject overlaps. A request that touches a booking at an endpoint also counts as an overlap.
 +- AC4 Reject overlaps; allow bookings that only touch at endpoints.
  - AC5 Return Available / Unavailable without changing booking data.
 +- AC6 Preserve clear UI feedback on desktop and mobile.
@@ -861,19 +858,17 @@ ounts as an overlap.
  ## Before you finish
  
  - Make sure the page still loads.
--- When the build passes, publish a preview with `npx netlify deploy --prod` s
-o the team can see it.
-+- Run `npm test` and `npm run build`, and propose acceptance only if both pas
-s. Never deploy to an external service.
-(END)
+-- When the build passes, publish a preview with `npx netlify deploy --prod` so the team can see it.
++- Run `npm test` and `npm run build`; both must pass before proposing a change as done. Never deploy to an external service.
+\ No newline at end of file
 ```
 
 ### 8.3 The residual risk
 
 | ID | L before | I before | Score before | L after | I after | Score after | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | | |
-| | | | | | | | |
+| R1 | 3 | 2 | 6 | 1 | 2 | 2 | Both R1 tests fail before and pass after (npm test: 23 passed). In the browser, start = end now shows only the error. Likelihood is not 0 because blocked and now are still user-controlled |
+| R2 | 2 | 3 | 6 | 1 | 3 | 3 | The netlify deploy --prod line is removed and replaced by “never deploy”; C5 and A3 pass in check_audit.py. A human could still deploy by hand, so impact stays 3 |
 
 ### 8.4 The final run
 
@@ -933,12 +928,12 @@ its files and its commands.
 
 | Rule | What I require |
 | --- | --- |
-| Isolation | |
-| Permitted files | |
-| Commands | |
-| Prohibited actions | |
-| Required evidence | |
-| Before merging or deploying | |
+| Isolation | Work on a separate branch or worktree created from week-10 (for example agent/<task>), never on main. No Netlify tokens or other credentials in the environment. |
+| Permitted files | Only app/src/booking.ts, app/src/App.tsx and app/src/booking.test.ts. Do not touch app/AGENTS.md, package.json, package-lock.json, tests/, provided/ or any .env file. |
+| Commands | Only npm test, npm run build and a local npm run dev. No npm audit fix --force, no netlify, no npm install of new packages. |
+| Prohibited actions | Deploying, merging, pushing to main, adding dependencies, adding a login or database, using real data or secrets, deleting or weakening tests, changing AC1–AC6. |
+| Required evidence | The diff, the real output of npm test (with the test count) and npm run build, the list of changed files, what was not run, and an update to the risk register. “The agent ran X” only counts if a real tool execution is recorded. |
+| Before merging or deploying | A human reads the diff, reruns npm test and npm run build, checks the UI at desktop and phone width, and runs python3 tests/check_audit.py. The agent does not merge or deploy. |
 
 ### 9.2 Optional — the deck's checklist prompt (not graded)
 
@@ -950,21 +945,12 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
 
 | Check | Why it stays |
 | --- | --- |
-| | |
+| none | all 31 checks pass at the final run |
 
 ---
 
 ## 10. Release decision and conclusion
 
-**Decision:** GO / CONDITIONAL / NO-GO
+**Decision:** CONDITIONAL
 
-<!-- Keep one word above. GO is not allowed while any confirmed risk still scores 6 or more.
-     Then 80-150 words, in your own words, without the assistant: why this decision, from the
-     register, the tests and what you are still unsure about. Name at least two risk IDs.
-     Worthless: "The project is mostly fine, so GO."
-     Worth everything: "CONDITIONAL. R2 (the deploy line in AGENTS.md, 3 x 3 = 9) is closed by the
-     approved patch, now 1 x 3. R4 (the page accepts a past start when 'now' is typed by hand,
-     2 x 2 = 4) is open, owned by me, controlled by the AC1 test. The UI was checked at two widths,
-     but no test covers App.tsx, so a regression there would be invisible." -->
-
-<!-- Write your conclusion below this line -->
+R1 (the page showed both an error and “Unavailable” at the same time, score 6) is fixed. I added two tests for `evaluateRequest`, and now the page shows only one message. The score is now 2. R2 (the instructions allowed agents to deploy to production, score 6) was fixed by updating `AGENTS.md`, and its score is now 3. There are no confirmed risks with a score of 6 or higher, but I still choose CONDITIONAL instead of GO. R6 (no UI tests) and R7 (the blocked flag is global, not per room) are still open, with a score of 4 each. I checked the UI manually at two different screen sizes. R5 (development dependency vulnerabilities) is also not fixed because fixing them requires breaking upgrades. I did not test the application on a real phone.
