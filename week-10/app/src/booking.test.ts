@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canBook, type Interval } from './booking';
+import { canBook, type Interval, evaluateRequest } from './booking';
 
 describe('canBook() unit tests', () => {
   // Fixed current time for every test: 09:00
@@ -179,5 +179,16 @@ describe('canBook() unit tests', () => {
       expect(decision).toBe(true);
       expect(bookings).toEqual(before);
     });
+  });
+});
+describe('R1 regression: invalid input must not be reported as Unavailable', () => {
+  it('R1 AC1/AC6: start equal to end is reported as invalid, not Unavailable', () => {
+    const r = evaluateRequest({ start: 660, end: 660, now: 540, blocked: false, bookings: [] });
+    expect(r.status).toBe('invalid');
+  });
+
+  it('R1 AC1/AC6: reversed interval is reported as invalid, not Unavailable', () => {
+    const r = evaluateRequest({ start: 700, end: 650, now: 540, blocked: false, bookings: [] });
+    expect(r.status).toBe('invalid');
   });
 });

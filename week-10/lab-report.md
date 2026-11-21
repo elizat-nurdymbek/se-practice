@@ -624,10 +624,70 @@ s. Never deploy to an external service.
 
 ### 7.1 The regression test fails before the mitigation
 
-The risk it covers: **R?**. The real run, with the new test failing:
+The risk it covers: **R1**. The real run, with the new test failing:
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-10/app
+
+ ❯ src/booking.test.ts (23 tests | 2 failed) 5ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1AC1: returns true when end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4AC1: a booking starting one minute after now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T01 AC4: returns true when touching the existing booking after (660–720) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T14 AC4: returns true when there are no existing bookings 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >BUG-A AC4: returns true when touching the last of three consecutive bookings 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: anAvailable request leaves the existing bookings unchanged 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > BUG-B AC5: does not mutate bookings when checking an available slot 0ms
+   × R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: start equal to end is reported as invalid, not Unavailable 2ms
+     → evaluateRequest is not a function
+   × R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: reversed interval is reported as invalid, not Unavailable 0ms
+     → evaluateRequest is not a function
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/booking.test.ts > R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: start equal to end is reported as invalid, not Unavailable
+TypeError: evaluateRequest is not a function
+ ❯ src/booking.test.ts:186:15
+    184| describe('R1 regression: invalid input must not be …
+    185|   it('R1 AC1/AC6: start equal to end is reported as…
+    186|     const r = evaluateRequest({ start: 660, end: 66…
+       |               ^
+    187|     expect(r.status).toBe('invalid');
+    188|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/booking.test.ts > R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: reversed interval is reported as invalid, not Unavailable
+TypeError: evaluateRequest is not a function
+ ❯ src/booking.test.ts:191:15
+    189| 
+    190|   it('R1 AC1/AC6: reversed interval is reported as …
+    191|     const r = evaluateRequest({ start: 700, end: 65…
+       |               ^
+    192|     expect(r.status).toBe('invalid');
+    193|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 21 passed (23)
+   Start at  01:08:19
+   Duration  295ms (transform 30ms, setup 0ms, collect 28ms,tests 5ms, environment 0ms, prepare 48ms)
 
 ```text
-(paste here)
+The test fails because evaluateRequest doesn't exist yet, meaning there's no correct result for the invalid input. I confirmed the risk manually in the browser: when start = end , both the error and Unavailable are shown.
 ```
 
 ### 7.2 The manual UI check
