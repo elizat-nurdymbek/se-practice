@@ -625,6 +625,8 @@ s. Never deploy to an external service.
 ### 7.1 The regression test fails before the mitigation
 
 The risk it covers: **R1**. The real run, with the new test failing:
+
+```text
  RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-10/app
 
  ❯ src/booking.test.ts (23 tests | 2 failed) 5ms
@@ -685,22 +687,20 @@ TypeError: evaluateRequest is not a function
       Tests  2 failed | 21 passed (23)
    Start at  01:08:19
    Duration  295ms (transform 30ms, setup 0ms, collect 28ms,tests 5ms, environment 0ms, prepare 48ms)
-
-```text
-The test fails because evaluateRequest doesn't exist yet, meaning there's no correct result for the invalid input. I confirmed the risk manually in the browser: when start = end , both the error and Unavailable are shown.
 ```
+
+The test fails because evaluateRequest doesn't exist yet, meaning there's no correct result for the invalid input. I confirmed the risk manually in the browser: when start = end , both the error and Unavailable are shown.
 
 ### 7.2 The manual UI check
 
 | View | Width | What I checked | Result | Screenshot |
 | --- | --- | --- | --- | --- |
-| Desktop | | | | `evidence/ui-desktop.png` |
-| Mobile | | | | `evidence/ui-mobile.png` |
+| Desktop | 1440px | Entered start = end and a valid booking request. Checked message readability, clipping and overlapping elements. | messages are read, but when start = end both error and Unavailable are shown, this is R1 | `evidence/ui-desktop.png` |
+| Mobile | 393 × 852 (DevTools viewport) | Entered start = end and a valid booking request. Checked field layout, message readability, clipping and overlapping elements. | alid request shows Available, start = end shows both messages, nothing cut off | `evidence/ui-mobile.png` |
 
 ### 7.3 Tests and checks I did not run
 
-<!-- Name each one and why. "None" only if it is true. -->
--
+- Automatic UI/component tests App.tsx: they are not in the project (this is R6);
 
 ---
 
@@ -708,44 +708,164 @@ The test fails because evaluateRequest doesn't exist yet, meaning there's no cor
 
 ### 8.1 The first mitigation
 
-**Risk:** R?
+**Risk:** R1
 
 **If this is the refactor** — the prompt you sent (README Part 8), then the problem → pattern → benefit
 line. Otherwise leave both empty.
 
 ```text
-(the refactor prompt, if this is the refactor)
+Refactor the availability logic into a small, pure module, keeping the existing function inputs, outputs, and UI behavior. Use a pattern only if the identified design problem justifies it. Do not add new features or dependencies. Show the files you plan to edit before making changes.
+
+Follow-up I sent after reviewing the agent's plan: "Add `evaluateRequest` to `src/booking.ts`, returning `{status:'invalid', message}`, `{status:'available'}` or `{status:'unavailable'}`; keep `canBook` unchanged; use it in `App.tsx check()` so only one message is shown. Make the two R1 tests pass. Minimal patch only."
 ```
 
-**Problem → pattern → benefit:**
+**Problem → pattern → benefit:** The decision "invalid / available / unavailable" lived inside `App.tsx check()`, and `canBook` returns only a boolean, so the page could not tell invalid input from a taken slot and showed both an error and "Unavailable". No design pattern was justified: an extracted pure function `evaluateRequest` in `booking.ts` is enough, and it makes the decision testable and the page shows one message instead of two.
 
 **What I rejected from the agent's patch, and why:**
+- The agent's first plan: a new `availability.ts` that split `canBook` into several predicates, with no change to `App.tsx` and no `evaluateRequest`. I rejected it because it solved no identified problem and did not fix R1.
+- Its statement that the patch "satisfies the requirements": it could not run the tests in its session, so I did not accept it as evidence. I ran `npm test` and `npm run build` myself (see 8.4).
+- I checked the diff for unrelated changes (renames, style edits, new dependencies, changes to `canBook`) and found none. The only extra edits were trailing-space cleanups on lines that changed anyway, which I accepted as harmless.
+- Note: this is a deliberate behaviour fix, not a pure refactor. With start ≥ end the page now shows only the error and no "Unavailable". `canBook` and all 21 earlier tests are unchanged and still pass.
 
 The diff I approved (`git diff`):
 
 ```text
-(paste here)
+diff --git a/week-10/app/src/App.tsx b/week-10/app/src/App.tsx
+index 1b12b48..bd056d0 100644
+--- a/week-10/app/src/App.tsx
++++ b/week-10/app/src/App.tsx
+@@ -1,4 +1,4 @@
+-import { canBook } from './booking'; 
++import { evaluateRequest } from './booking';
+ import { useState } from 'react';
+ 
+ // Starter for students with no Week 06 project. The availability decision lives INSIDE this
+@@ -40,21 +40,22 @@ export default function App() {
+     const s = toMinutes(start);
+     const e = endOfDay ? 1440 : toMinutes(end);
+     const n = toMinutes(now);
+-    if (!(s < e)) {
+-      setError('The end time must be after the start time.');
+-    } else {
+-      setError('');
+-    }
+ 
+-    const ok = canBook({ 
+-      start: s, 
+-      end: e, 
+-      now: n, 
+-      blocked, 
++    const decision = evaluateRequest({
++      start: s,
++      end: e,
++      now: n,
++      blocked,
+       bookings: room.bookings,
+     });
+-    
+-    setResult(ok);
++
++    if (decision.status === 'invalid') {
++      setError(decision.message);
++      setResult(null);
++    } else {
++      setError('');
++      setResult(decision.status === 'available');
++    }
+   }
+ 
+   return (
+diff --git a/week-10/app/src/booking.ts b/week-10/app/src/booking.ts
+index 9a79023..1755a56 100644
+--- a/week-10/app/src/booking.ts
++++ b/week-10/app/src/booking.ts
+@@ -16,3 +16,18 @@ export function canBook({ start, end, now, blocked, bookings }: {
+   }
+   return true;
+ }
++
++export function evaluateRequest({ start, end, now, blocked, bookings }: {
++  start: number;
++  end: number;
++  now: number;
++  blocked: boolean;
++  bookings: { start: number; end: number }[];
++}): { status: 'invalid'; message: string } | { status: 'available' } | { status: 'unavailable' } {
++  if (!(start < end)) {
++    return { status: 'invalid', message: 'The end time must be after the start time.' };
++  }
++  return canBook({ start, end, now, blocked, bookings })
++    ? { status: 'available' }
++    : { status: 'unavailable' };
++}
 ```
 
 ### 8.2 The second mitigation
 
-**Risk:** R?
+**Risk:** R2
 
-**If this is the refactor** — the prompt you sent (README Part 8), then the problem → pattern → benefit
-line. Otherwise leave both empty.
+**If this is the refactor** — the prompt you sent (README Part 8), then the problem → pattern → benefit line. Otherwise leave both empty.
 
 ```text
-(the refactor prompt, if this is the refactor)
 ```
 
 **Problem → pattern → benefit:**
 
 **What I rejected from the agent's patch, and why:**
+- The agent's replacement for the Supabase/login line ("Preserve the existing acceptance contract (AC1–AC6) unless the user explicitly asks to change it"). The contract is already listed above, and the "unless asked" clause is a loophole. I replaced it with a direct ban on a login, a database, secrets and personal data.
+- Its two separate added lines for no deployment and no secrets. I merged them with the test rule into one line, to keep the patch within the 14-line limit.
+- I did not change "Edit any file" and "Add packages when a task needs them". They are not among the six constraints. I handle that risk in the background-agent rules (9.1).
+- This patch also closes R3 (real data, Supabase, login) and R4 (the missing `test:unit` command), because it changes the same file.
 
 The diff I approved (`git diff`):
 
 ```text
-(paste here)
+nurdymbekelizat@MacBook-Air-Nurdymbek week-10 % git diff app/AGENTS.md      
+diff --git a/week-10/app/AGENTS.md b/week-10/app/AGENTS.md
+index b786d88..30ede77 100644
+--- a/week-10/app/AGENTS.md
++++ b/week-10/app/AGENTS.md
+@@ -9,30 +9,31 @@ A React + TypeScript page (Vite) that tells a student whether a campus room is f
+ requested time. The booking rule lives in `src/booking.ts` (`canBook`); the page is `src/App.tsx`;
+ the tests are in `src/booking.test.ts`.
+ 
+-For realism, use real room names and the real timetable from the KBTU portal.
++Scope: one fictional room with fictional bookings only; never use real room names, timetables or personal data.
+ 
+ ## Acceptance contract
+ 
+ - AC1 Reject start ≥ end and requests in the past.
+ - AC2 Enforce the maximum allowed duration (120 minutes).
+ - AC3 Reject a blocked room.
+-- AC4 Reject overlaps. A request that touches a booking at an endpoint also c
+ounts as an overlap.
++- AC4 Reject overlaps; allow bookings that only touch at endpoints.
+ - AC5 Return Available / Unavailable without changing booking data.
++- AC6 Preserve clear UI feedback on desktop and mobile.
+ 
+ ## Commands
+ 
+ - Install: `npm install`
+ - Dev server: `npm run dev`
+-- Tests: `npm run test:unit`
++- Tests: `npm test` 
+ - Build: `npm run build`
+ 
+ ## You may
+ 
+ - Edit any file in the project.
+ - Add packages when a task needs them.
+-- If bookings need to persist, add a small Supabase table and a login page.
++- Do not add a login, a database, secrets, keys or personal data.
+ 
+ ## Before you finish
+ 
+ - Make sure the page still loads.
+-- When the build passes, publish a preview with `npx netlify deploy --prod` s
+o the team can see it.
++- Run `npm test` and `npm run build`, and propose acceptance only if both pas
+s. Never deploy to an external service.
+(END)
 ```
 
 ### 8.3 The residual risk
@@ -760,7 +880,46 @@ The diff I approved (`git diff`):
 The real output of the **full** suite after both mitigations. Every test must pass.
 
 ```text
-(paste here)
+nurdymbekelizat@MacBook-Air-Nurdymbek week-10 % cd app
+nurdymbekelizat@MacBook-Air-Nurdymbek app % npm test
+
+> smart-campus-availability@0.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-10/app
+
+ ✓ src/booking.test.ts (23 tests) 3ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1AC1: returns true when end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4AC1: a booking starting one minute after now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T01 AC4: returns true when touching the existing booking after (660–720) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >T14 AC4: returns true when there are no existing bookings 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap >BUG-A AC4: returns true when touching the last of three consecutive bookings 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: anAvailable request leaves the existing bookings unchanged 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > BUG-B AC5: does not mutate bookings when checking an available slot 0ms
+   ✓ R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: start equal to end is reported as invalid, not Unavailable 0ms
+   ✓ R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: reversed interval is reported as invalid, not Unavailable 0ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  01:45:57
+   Duration  294ms (transform 36ms, setup 0ms, collect 31ms,tests 3ms, environment 0ms, prepare 53ms)
+
+nurdymbekelizat@MacBook-Air-Nurdymbek app % 
 ```
 
 ---
