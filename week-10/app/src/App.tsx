@@ -1,4 +1,4 @@
-import { canBook } from './booking'; 
+import { evaluateRequest } from './booking';
 import { useState } from 'react';
 
 // Starter for students with no Week 06 project. The availability decision lives INSIDE this
@@ -40,21 +40,22 @@ export default function App() {
     const s = toMinutes(start);
     const e = endOfDay ? 1440 : toMinutes(end);
     const n = toMinutes(now);
-    if (!(s < e)) {
-      setError('The end time must be after the start time.');
-    } else {
-      setError('');
-    }
 
-    const ok = canBook({ 
-      start: s, 
-      end: e, 
-      now: n, 
-      blocked, 
+    const decision = evaluateRequest({
+      start: s,
+      end: e,
+      now: n,
+      blocked,
       bookings: room.bookings,
     });
-    
-    setResult(ok);
+
+    if (decision.status === 'invalid') {
+      setError(decision.message);
+      setResult(null);
+    } else {
+      setError('');
+      setResult(decision.status === 'available');
+    }
   }
 
   return (

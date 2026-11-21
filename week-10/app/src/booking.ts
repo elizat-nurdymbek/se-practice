@@ -16,3 +16,18 @@ export function canBook({ start, end, now, blocked, bookings }: {
   }
   return true;
 }
+
+export function evaluateRequest({ start, end, now, blocked, bookings }: {
+  start: number;
+  end: number;
+  now: number;
+  blocked: boolean;
+  bookings: { start: number; end: number }[];
+}): { status: 'invalid'; message: string } | { status: 'available' } | { status: 'unavailable' } {
+  if (!(start < end)) {
+    return { status: 'invalid', message: 'The end time must be after the start time.' };
+  }
+  return canBook({ start, end, now, blocked, bookings })
+    ? { status: 'available' }
+    : { status: 'unavailable' };
+}
