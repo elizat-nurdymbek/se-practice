@@ -13,7 +13,7 @@ grader find your answers by them. You can add rows to any table, but never remov
 
 | | |
 | --- | --- |
-| Assistant I built the feature with (tool) | |
+| Assistant I built the feature with (tool) | Claude |
 | Its exact model (with its version, or `not displayed`) | |
 | Assistant I reviewed with (tool) | |
 | Its exact model (with its version, or `not displayed`) | |
