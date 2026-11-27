@@ -1,8 +1,8 @@
 # Week 11 — Lab report
 
-**Name:**
-**Group:**
-**Date:**
+**Name:** Elizat Nurdymbek
+**Group:** Monday 16-19
+**Date:** 2026/11/28
 
 Fill in every section. **Do not delete, rename or renumber the headings.** The checker and the
 grader find your answers by them. You can add rows to any table, but never remove its header.
@@ -17,10 +17,10 @@ grader find your answers by them. You can add rows to any table, but never remov
 | Its exact model (with its version, or `not displayed`) | |
 | Assistant I reviewed with (tool) | |
 | Its exact model (with its version, or `not displayed`) | |
-| Starting point (`week-10` or `week-08`) | |
-| Baseline commit — the checkpoint of Part 0 | |
-| Where I ran the tests (Bolt terminal / my computer / Codespace) | |
-| Vitest version (the `RUN  v…` line of a run) | |
+| Starting point (`week-10` or `week-08`) | week-10 |
+| Baseline commit — the checkpoint of Part 0 | dc98cce |
+| Where I ran the tests (Bolt terminal / my computer / Codespace) | my computer |
+| Vitest version (the `RUN  v…` line of a run) | v3.2.7 |
 
 ---
 
@@ -28,21 +28,50 @@ grader find your answers by them. You can add rows to any table, but never remov
 
 ### 2.1 The project's commands
 
-Run each command in `week-11/app/` before any change. **Exists:** `yes` or `no`. **Result:**
-`pass`, `fail`, `missing` or `not run`.
+Run each command in `week-11/app/` before any change. **Exists:** `yes` or `no`. **Result:** `pass`, `fail`, `missing` or `not run`.
 
 | Command | Exists | Result | Note |
 | --- | --- | --- | --- |
-| `npx vitest run` | | | |
-| `npm run build` | | | |
-| `npm run lint` | | | |
+| `npx vitest run` | yes | pass | 23 tests passed |
+| `npm run build` | yes | pass | tsc && vite build is OK |
+| `npm run lint` | no | missing | No "lint" script in package.json |
 
 ### 2.2 The baseline test run
 
 The **real** output of `npx vitest run` in `week-11/app/`, before any change:
 
 ```text
-(paste here)
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-11/app
+
+ ✓ src/booking.test.ts (23 tests) 3ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T02 AC1: returns false when start equals now 1ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T03 AC1: returns false for zero duration (start === end) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T04 AC1: returns false when start is later than end (reversed) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > T05 AC1: returns false when end is past the end of the day (1441) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X1 AC1: returns true when end is exactly 1440 (24:00) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X3 AC1: a negative start is rejected (now = -10 so only 0 <= start can fail) 0ms
+   ✓ canBook() unit tests > AC1: Time Interval Validity > X4 AC1: a booking starting one minute after now is accepted 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T06 AC2: returns true for exactly 120 minutes 0ms
+   ✓ canBook() unit tests > AC2: Maximum Duration Limit > T07 AC2: returns false for 121 minutes 0ms
+   ✓ canBook() unit tests > AC3: Blocked Room > T13 AC3: returns false when the room is blocked, although the slot is valid 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T01 AC4: returns true when touching the existing booking after (660–720) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T08 AC4: returns true when touching the existing booking before (570–600) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T09 AC4: returns false for a partial overlap (630–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T10 AC4: returns false when the request contains the existing booking (570–690) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T11 AC4: returns false when the request is inside the existing booking (615–645) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T12 AC4: returns false for an identical interval (600–660) 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > T14 AC4: returns true when there are no existing bookings 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > X2 AC4: returns true when the request touches two bookings and overlaps neither 0ms
+   ✓ canBook() unit tests > AC4: Existing Bookings Overlap > BUG-A AC4: returns true when touching the last of three consecutive bookings 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > AC5: an Available request leaves the existing bookings unchanged 0ms
+   ✓ canBook() unit tests > AC5: Data Preservation > BUG-B AC5: does not mutate bookings when checking an available slot 0ms
+   ✓ R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: start equal to end is reported as invalid, not Unavailable 0ms
+   ✓ R1 regression: invalid input must not be reported as Unavailable > R1 AC1/AC6: reversed interval is reported as invalid, not Unavailable 0ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  01:32:45
+   Duration  244ms (transform 31ms, setup 0ms, collect 28ms, tests 3ms, environment 0ms, prepare 46ms)
 ```
 
 ### 2.3 What I located
@@ -59,7 +88,7 @@ The **real** output of `npx vitest run` in `week-11/app/`, before any change:
 
 ### 3.1 The user story
 
-<!-- The deck's sentence, exactly. -->
+As a student, I want a short explanation of room availability so I understand the decision.
 
 ### 3.2 The contract
 
@@ -67,33 +96,40 @@ One row per field. **Validation** is what you reject, and how.
 
 | Field | Direction | Type / format | Validation |
 | --- | --- | --- | --- |
-| `roomLabel` | input | | |
-| `start` | input | | |
-| `end` | input | | |
-| `isAvailable` | input | | |
-| `reasonCode` | input | | |
-| `explanation` | output | | |
+| `roomLabel` | input | string | Trim it. Reject if empty or longer than 60 characters. |
+| `start` | input | string "HH:MM"	| Reject if it is not a real time in the format HH:MM. |
+| `end` | input | string "HH:MM" | Same as start. |
+| `isAvailable` | input | boolean | Comes from canBook. Reject if it is not a boolean. |
+| `reasonCode` | input | one of 6 codes | Comes from availabilityReason. Reject any other value. |
+| `explanation` | output | string | Not empty, max 280 characters, max 2 sentences, agrees with isAvailable, has no time that is not in the request. |
 
 ### 3.3 Acceptance criteria and failure behaviour
 
 F1–F5 (README §3.4), then what the student sees in each failure:
 
-<!-- Write below this line -->
+F1 Existing availability and overlap rules remain unchanged.
+F2 The explanation agrees with the deterministic result; no invented booking details.
+F3 Empty, malformed or overly long input is rejected.
+F4 API timeout, error or unavailable key produces a safe fallback.
+F5 A user can distinguish generated explanation from confirmed booking status.
 
 | Failure | What the student sees |
 | --- | --- |
-| Invalid input (empty, malformed, too long) | |
-| The model times out | |
-| The model fails (error, no key) | |
-| The model's answer contradicts the decision, or invents a detail | |
+| Invalid input (empty, malformed, too long) | A short message about the input. The adapter is not called. The booking status is still shown. |
+| The model times out | The fallback sentence made from the reason code. The status does not change. |
+| The model fails (error, no key) | The same fallback sentence. The page still works. |
+| The model's answer contradicts the decision, or invents a detail | The answer is thrown away. The fallback sentence is shown instead. |
 
 ### 3.4 The flow
 
-A written flow with arrows (`->`), or a diagram in a code block. Name your checker function and the
-adapter, and say which one decides availability.
+A written flow with arrows (`->`), or a diagram in a code block. Name your checker function and the adapter, and say which one decides availability.
 
 ```text
-(paste here)
+student input -> validation -> availabilityReason (checker, DECIDES) -> { isAvailable, reasonCode }
+  -> explainAvailability -> adapter (mock, only EXPLAINS) -> check the output
+  -> UI shows: status line (confirmed) + "Generated explanation (mock), not a booking decision"
+If the adapter is late, throws, or gives a bad answer -> fallback text from reasonCode.
+Only availabilityReason / canBook decides availability. The adapter never does.
 ```
 
 ---
