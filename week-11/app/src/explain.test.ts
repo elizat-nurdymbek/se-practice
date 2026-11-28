@@ -143,4 +143,17 @@ describe('explainAvailability', () => {
     const out = await explainAvailability(inputFor(660, 720, false, 'Overlap Lab'), mockAdapter);
     expect(out.kind === 'explained' && out.source).toBe('model');
   });
+  test('V4 F2: an answer with the wrong reason is replaced by the fallback', async () => {
+    const wrongReason: ExplainAdapter = async () => ({
+      explanation: 'Room A-101 is not available because the room is blocked.',
+    });
+    const out = await explainAvailability(inputFor(630, 690), wrongReason, 500); // really: overlap
+    expect(out.kind === 'explained' && out.source).toBe('fallback');
+  });
+
+  test('V4 F2: an available answer must say that the room is available', async () => {
+    const vague: ExplainAdapter = async () => ({ explanation: 'Have a nice day.' });
+    const out = await explainAvailability(inputFor(660, 720), vague, 500);
+    expect(out.kind === 'explained' && out.source).toBe('fallback');
+  });
 });
