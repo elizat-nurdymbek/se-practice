@@ -75,6 +75,10 @@ function norm(t: string): string {
   return `${h.padStart(2, '0')}:${m}`;
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Checks the model's answer. Returns true only if it is safe to show.
 export function isValidExplanation(output: unknown, input: ExplainInput): output is ExplainOutput {
   if (typeof output !== 'object' || output === null) return false;
@@ -82,11 +86,13 @@ export function isValidExplanation(output: unknown, input: ExplainInput): output
   if (typeof text !== 'string') return false;
   const t = text.trim();
   if (t.length === 0 || t.length > MAX_EXPLANATION) return false;
-  const sentences = t.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0);
+  // The room label is data: remove it before looking for words and times.
+  const body = t.replace(new RegExp(escapeRegExp(input.roomLabel), 'gi'), 'the room');
+  const sentences = body.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0);
   if (sentences.length > 2) return false;
-  if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(t) : !NEGATIVE.test(t)) return false;
-  if (CLOCK_WORDS.test(t)) return false;
-  const times = t.match(/\b\d{1,2}:\d{2}\b/g) ?? [];
+  if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(body) : !NEGATIVE.test(body)) return false;
+  if (CLOCK_WORDS.test(body)) return false;
+  const times = body.match(/\b\d{1,2}:\d{2}\b/g) ?? [];
   const allowed = new Set([norm(input.start), norm(input.end)]);
   return times.every((x) => allowed.has(norm(x)));
 }
