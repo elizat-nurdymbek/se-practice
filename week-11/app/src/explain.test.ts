@@ -130,4 +130,11 @@ describe('explainAvailability', () => {
     expect(canBook(request)).toBe(before);
     expect(BOOKINGS).toEqual([{ start: 600, end: 660 }]);
   });
+  test('V1 F2: an invented time in am/pm format is replaced by the fallback', async () => {
+    const inventing: ExplainAdapter = async () => ({
+      explanation: 'The room is available from 11:00 to 12:00, and the next booking starts at 3pm.',
+    });
+    const out = await explainAvailability(inputFor(660, 720), inventing, 500);
+    expect(out.kind === 'explained' && out.source).toBe('fallback');
+  });
 });

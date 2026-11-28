@@ -67,7 +67,7 @@ export function validateInput(
   };
 }
 
-const NEGATIVE = /not available|unavailable|cannot|can't|not free|blocked|overlap|too long|invalid|past/i;
+const NEGATIVE = /not available|unavailable|cannot|can't|not free|blocked|overlap|too long|invalid|past/i; const CLOCK_WORDS = /\b\d{1,2}\s?(?:am|pm)\b|\bo'clock\b|\bnoon\b|\bmidnight\b/i;
 const NEGATIVE_FOR_AVAILABLE = /not available|unavailable|cannot|can't|not free|blocked|overlap|too long|invalid/i;
 
 function norm(t: string): string {
@@ -85,6 +85,7 @@ export function isValidExplanation(output: unknown, input: ExplainInput): output
   const sentences = t.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0);
   if (sentences.length > 2) return false;
   if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(t) : !NEGATIVE.test(t)) return false;
+  if (CLOCK_WORDS.test(t)) return false;
   const times = t.match(/\b\d{1,2}:\d{2}\b/g) ?? [];
   const allowed = new Set([norm(input.start), norm(input.end)]);
   return times.every((x) => allowed.has(norm(x)));
