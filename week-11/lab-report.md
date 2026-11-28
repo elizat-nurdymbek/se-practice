@@ -14,9 +14,9 @@ grader find your answers by them. You can add rows to any table, but never remov
 | | |
 | --- | --- |
 | Assistant I built the feature with (tool) | Claude |
-| Its exact model (with its version, or `not displayed`) | |
-| Assistant I reviewed with (tool) | |
-| Its exact model (with its version, or `not displayed`) | |
+| Its exact model (with its version, or `not displayed`) | Claude Sonnet 5.5 |
+| Assistant I reviewed with (tool) | ChatGPT |
+| Its exact model (with its version, or `not displayed`) | GPT-6 |
 | Starting point (`week-10` or `week-08`) | week-10 |
 | Baseline commit — the checkpoint of Part 0 | dc98cce |
 | Where I ran the tests (Bolt terminal / my computer / Codespace) | my computer |
@@ -78,9 +78,9 @@ The **real** output of `npx vitest run` in `week-11/app/`, before any change:
 
 | What | Where (file, and the function or component name) |
 | --- | --- |
-| The availability function | |
-| The UI component | |
-| The repository instructions | |
+| The availability function | app/src/booking.ts, availabilityReason (and canBook, evaluateRequest) |
+| The UI component | app/src/App.tsx, App |
+| The repository instructions | app/AGENTS.md |
 
 ---
 
@@ -105,6 +105,7 @@ One row per field. **Validation** is what you reject, and how.
 
 ### 3.3 Acceptance criteria and failure behaviour
 
+```text
 F1–F5 (README §3.4), then what the student sees in each failure:
 
 F1 Existing availability and overlap rules remain unchanged.
@@ -112,6 +113,7 @@ F2 The explanation agrees with the deterministic result; no invented booking det
 F3 Empty, malformed or overly long input is rejected.
 F4 API timeout, error or unavailable key produces a safe fallback.
 F5 A user can distinguish generated explanation from confirmed booking status.
+```
 
 | Failure | What the student sees |
 | --- | --- |
@@ -232,7 +234,7 @@ Reply as JSON: {"explanation": "..."}
 ```
 
 ```text
-You explain a room booking decision to a student in at most two sentences, using only the facts in the JSON. Never change the status. Reply as JSON: {"explanation": "..."}
+C: You explain a room booking decision to a student in at most two sentences, using only the facts in the JSON. Never change the status. Reply as JSON: {"explanation": "..."}
 
 Example input:
 {"roomLabel":"Room X-1","start":"13:00","end":"14:00","isAvailable":false,"reasonCode":"room_blocked"}
@@ -248,6 +250,21 @@ The same three JSON inputs (`available`, `overlap`, `room_blocked`), sent after 
 {"roomLabel":"Room A-101","start":"11:00","end":"12:00","isAvailable":true,"reasonCode":"available"}
 {"roomLabel":"Room A-101","start":"10:30","end":"11:30","isAvailable":false,"reasonCode":"overlap"}
 {"roomLabel":"Room B-204","start":"11:00","end":"12:00","isAvailable":false,"reasonCode":"room_blocked"}
+
+--- Prompt A ---
+* Room A-101 (11:00–12:00): Available for booking.
+* Room A-101 (10:30–11:30): Unavailable because the time overlaps with another booking.
+* Room B-204 (11:00–12:00): Unavailable because the room is blocked.
+
+--- Prompt B ---
+{
+"explanation": "Room A-101 is available from 11:00 to 12:00. Room A-101 is not available from 10:30 to 11:30 because of an overlapping booking. Room B-204 is not available from 11:00 to 12:00 because the room is blocked."
+}
+
+--- Prompt C ---
+{
+"explanation": "Room A-101 is available from 11:00 to 12:00. Room A-101 is not available from 10:30 to 11:30 because of an overlapping booking. Room B-204 is not available from 11:00 to 12:00 because the room is blocked."
+}
 ```
 
 ### 5.3 The comparison
@@ -284,7 +301,7 @@ I chose B. Its rules are explicit: use only the JSON facts, mention only start a
 | E1 | available | explanation says available | explanation says the room is available, source is the mock | pass | E1 F2: available slot is explained as available |
 | E2 | overlap | unavailable and mentions the overlap | explanation says "not available" and "overlap" | pass | E2 F2: overlap is explained as unavailable and mentions the overlap |
 | E3 | blocked room | room_blocked | explanation mentions the blocked room | pass | E3 F2: blocked room gives room_blocked |
-| E4 | invalid time | invalid_time | isAvailable false pass | pass | E4 F2: invalid time (12:30-12:00) gives invalid_time |
+| E4 | invalid time | invalid_time | isAvailable false | pass | E4 F2: invalid time (12:30-12:00) gives invalid_time |
 | E5 | past time | past_time | isAvailable false | pass | E5 F2: past time (08:00-08:30 at 09:00) gives past_time |
 | E6 | empty input | rejected before the adapter is called | the adapter was not called | pass | E6 F3: a blank room label is rejected before the adapter is called |
 | E7 | long input | rejected | the adapter was not called | pass | E7 F3: a 500-character room label is rejected |
@@ -312,8 +329,8 @@ The real output of `npx vitest run` with `explain.test.ts` in place (before the 
 
 | File | What it shows |
 | --- | --- |
-| `evidence/explain-available.png` | |
-| `evidence/explain-fallback.png` | |
+| `evidence/explain-available.png` | Status Available, with the explanation in its own box labelled "Generated explanation (mock), not a booking decision" |
+| `evidence/explain-fallback.png` | Same page with "Simulate API failure" on: the box says "Fallback explanation…" and the status did not change |
 
 ---
 
@@ -324,40 +341,419 @@ The real output of `npx vitest run` with `explain.test.ts` in place (before the 
 Where it ran, how you made sure it could not edit, and what you gave it (the diff, README,
 `AGENTS.md`, the criteria):
 
-<!-- Write below this line -->
+The reviewer was ChatGPT, in a new chat, separate from the chat where the code was written. It was a plain chat with pasted text, so it could not edit files, and git status in my repository showed no change afterwards. I gave it the diff from the checkpoint (git diff dc98cce -- week-11/app), the README, AGENTS.md, and the acceptance criteria AC1-AC6 and F1-F5.
 
 ### 7.2 The review prompt and the answer
 
 What you sent, exactly (the deck's prompt):
 
 ```text
-(paste here)
+Act as a read-only agentic code reviewer. Inspect the proposed diff in context, repository instructions, and tests. Review correctness, security, maintainability, and performance. For each issue, provide severity, affected file, evidence, reproduction or verification method, and a minimal recommendation. Do not edit files. Clearly distinguish confirmed findings from hypotheses.
 ```
 
 The reviewer's answer, pasted unedited:
 
 ```text
-(paste here)
+Read-only code review — Week 11
+Changes requested
+Read-only review
+
+Overall assessment: The implementation has a good structure: the deterministic booking checker remains authoritative, explanation generation is separated into its own module, and timeout/error fallbacks are implemented.
+
+However, I found several correctness and testing weaknesses, particularly in F2 (agreement between explanation and decision). Passing the current tests would not establish that all explanations are factually correct.
+
+Review scope
+- week-11/app/src/App.tsx
+- week-11/app/src/booking.ts
+- week-11/app/src/explain.ts
+- week-11/app/src/explain.test.ts
+- Supplied Week 11 assignment instructions and AGENTS.md
+- Acceptance criteria AC1–AC6 and F1–F5
+I did not edit files or execute commands. Findings below are based on static inspection, not claimed runtime results. The original booking test suite, package configuration, and CSS were not included in the supplied diff, so those parts cannot be fully verified.
+
+1. Findings
+V1 — Explanation validation does not enforce the correct reason
+
+High
+ Confirmed
+Category: Correctness / Reliability
+Affected file: week-11/app/src/explain.ts
+Affected function: isValidExplanation()
+Acceptance criteria: F2
+Evidence
+The validator checks whether an unavailable explanation contains at least one negative keyword:
+if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(body) : !NEGATIVE.test(body)) {
+  return false;
+}
+
+However, it does not check whether the explanation matches the actual reasonCode.
+For example:
+Input:
+{
+  "roomLabel": "Room A-101",
+  "start": "10:30",
+  "end": "11:30",
+  "isAvailable": false,
+  "reasonCode": "overlap"
+}
+
+An adapter could return:
+{
+  "explanation": "Room A-101 is not available because the room is blocked."
+}
+
+This explanation contradicts the actual reason, but the validator can accept it because it contains negative wording.
+There is another weakness: an available explanation does not have to explicitly say that the room is available. It only needs to avoid certain negative keywords.
+Verification method
+Add tests for:
+- reasonCode: overlap with an explanation saying the room is blocked.
+- reasonCode: room_blocked with an explanation saying there is an overlap.
+- isAvailable: true with an explanation that never says available.
+Minimal recommendation
+
+Validate the explanation against both:
+1. The availability status.
+2. The specific reason code.
+Alternatively, use deterministic reason-specific explanations whenever the model output cannot be verified.
+
+V2 — Old availability results remain visible after input changes
+
+Medium
+ Confirmed
+
+Category: UI correctness / User experience
+
+Affected file: week-11/app/src/App.tsx
+
+Affected state:
+const [decided, setDecided] = useState<ExplainInput | null>(null);
+
+
+Acceptance criteria: AC6, F5
+
+Evidence
+
+The implementation saves the original request:
+setDecided({
+  roomLabel: room.name,
+  start: fmt(s),
+  end: fmt(e),
+  isAvailable,
+  reasonCode
+});
+
+
+This correctly preserves the original decision for explanation generation.
+
+However, when the student changes the current time, start time, end time, or room selection, decided is not cleared.
+
+Consequently:
+1. Student checks Room A-101 from 11:00 to 12:00.
+2. The page displays Available.
+3. Student changes the requested time to 13:00–14:00.
+4. The previous Available result and explanation remain visible.
+5. The student can still request an explanation for the previous request.
+The displayed controls and displayed decision can therefore describe different requests.
+
+Verification method
+1. Run the application.
+2. Check availability for one time range.
+3. Change the start or end time without pressing Check.
+4. Observe whether the previous result and explanation remain visible.
+Minimal recommendation
+
+Invalidate the previous decision and explanation when relevant inputs change, or clearly display the exact checked time range alongside the result.
+
+V3 — Tests do not sufficiently verify the explanation's correctness
+
+Medium
+ Confirmed
+
+Category: Testing / Maintainability
+
+Affected file: week-11/app/src/explain.test.ts
+
+Acceptance criteria: F2, F3, F4
+
+Evidence
+
+Consider E4:
+test('E4 F2: invalid time (12:30-12:00) gives invalid_time', async () => {
+  const input = inputFor(750, 720);
+
+  expect(input.reasonCode).toBe('invalid_time');
+
+  const out = await explainAvailability(input, mockAdapter);
+
+  expect(out.kind).toBe('explained');
+});
+
+
+The test verifies that an explanation exists, but does not verify that it actually explains the invalid time.
+
+Similar weaknesses exist in E3 and E5.
+
+For example, E3 checks that the reason code is room_blocked, but its explanation assertion only checks for the word blocked.
+
+This does not establish that the explanation correctly communicates the availability decision and its reason.
+
+Verification method
+
+Review the assertions in E3, E4 and E5.
+
+Add tests that deliberately supply incorrect explanations and verify that they are rejected.
+
+Minimal recommendation
+
+Strengthen the existing tests rather than replacing them.
+
+For each reason code, verify:
+- Correct availability status.
+- Correct reason.
+- No invented times.
+- Appropriate fallback when the explanation contradicts the decision.
+Also add explicit tests for the 120-minute boundary and endpoint-touching bookings if they are not already covered by the original booking suite.
+
+V4 — Timeout does not guarantee cancellation of the underlying adapter
+
+Medium
+ Potential issue
+
+Category: Reliability / Performance
+
+Affected file: week-11/app/src/explain.ts
+
+Affected function: explainAvailability()
+
+Evidence
+
+The implementation uses:
+const out = await Promise.race([
+  Promise.resolve().then(() => adapter(input, controller.signal)),
+  timeout,
+]);
+
+
+When the timeout occurs:
+controller.abort();
+reject(new Error('timeout'));
+
+
+This correctly allows the application to return a fallback.
+
+However, Promise.race() does not itself cancel the original asynchronous operation.
+
+If a future real adapter ignores the AbortSignal, the operation can continue after the fallback has already been returned.
+
+This is not a demonstrated problem with the current mock adapter, but it is relevant to future API integration.
+
+Verification method
+
+Create a test adapter that records whether it receives an abort signal and whether it actually stops its operation after cancellation.
+
+Minimal recommendation
+
+Ensure future adapters respect AbortSignal and clean up their underlying requests when aborted.
+
+V5 — The result source is named model even when using a mock
+
+Low
+ Confirmed
+
+Category: Maintainability / Clarity
+
+Affected file: week-11/app/src/explain.ts
+
+Evidence
+
+The result type declares:
+source: 'model' | 'fallback';
+
+
+But the default adapter is:
+export const mockAdapter: ExplainAdapter = async (input) => {
+
+
+And every valid adapter response is returned with:
+return {
+  kind: 'explained',
+  source: 'model',
+  explanation: out.explanation.trim()
+};
+
+
+The application currently compensates for this by displaying:
+Generated explanation (mock), not a booking decision
+
+
+Therefore, the user-facing label is reasonably clear, but the internal source name is misleading.
+
+Verification method
+
+Trace mockAdapter through explainAvailability() and inspect ExplainResult.source.
+
+Minimal recommendation
+
+Use a more accurate source classification, such as adapter or mock, if the result is always produced by the mock.
+
+2. Booking logic review
+No confirmed booking-rule regression found
+Affected file: week-11/app/src/booking.ts
+
+The refactoring from canBook() to availabilityReason() appears logically equivalent to the original booking rules.
+Acceptance criterion	Static review	Evidence
+AC1 — Invalid and past times	Preserved	invalid_time, past_time
+AC2 — Maximum 120 minutes	Preserved	end - start > 120
+AC3 — Blocked room	Preserved	blocked check
+AC4 — Overlap and endpoints	Preserved	Strict inequality comparisons
+AC5 — No mutation	Preserved	Read-only iteration through bookings
+AC6 — UI feedback	Partially verified	Existing result rendering remains
+
+The most important condition is:
+if (start < b.end && end > b.start) {
+  return 'overlap';
+}
+
+
+This correctly allows bookings that touch at endpoints.
+
+For example:
+Existing booking	Requested booking	Result
+10:00–11:00	09:00–10:00	Available
+10:00–11:00	11:00–12:00	Available
+10:00–11:00	10:30–11:30	Unavailable
+
+The maximum-duration condition also correctly permits exactly 120 minutes.
+
+Important: The diff changes the internal decision function but does not appear to change the booking rules themselves. This is consistent with F1 and the Week 11 instructions.
+
+3. Security review
+No direct security vulnerability confirmed
+Area	Assessment
+API key exposure	No key visible in supplied src/ changes
+Provider SDK	No provider SDK imported
+External API calls	No provider API calls
+Prompt injection	Explicit instruction treats roomLabel as data
+Output validation	Implemented, but incomplete
+React rendering	Uses normal React text rendering
+Timeout handling	Implemented
+Error fallback	Implemented
+
+One important distinction:
+
+SYSTEM_INSTRUCTION tells a future model not to follow instructions inside roomLabel, but this is not a complete security guarantee.
+
+The current mock adapter does not actually invoke an LLM. Therefore, prompt-injection resistance against a real provider cannot be established from these tests.
+
+The Week 11 specification explicitly prohibits putting API keys and provider calls inside app/src/. The supplied changes respect that requirement.
+
+4. Performance and maintainability
+A few additional observations:
+Area	Observation	Priority
+Booking calculations	availabilityReason() is called through evaluateRequest() and then again directly	Low
+Component state	Several independent states manage the explanation lifecycle	Low
+Error handling	explainAvailability() has a fallback and finally cleanup	Good
+Separation of concerns	Booking logic and explanation logic are separated	Good
+Mock adapter	Uses the same contract expected from a future adapter	Good
+Output validation	Relies heavily on keyword matching	Medium
+
+The repeated availability calculation is not a meaningful performance concern for the current small booking list.
+
+5. Acceptance criteria assessment
+This table reflects static inspection, not executed tests.
+Criterion	Assessment
+AC1	Preserved
+AC2	Preserved
+AC3	Preserved
+AC4	Preserved
+AC5	Preserved
+AC6	Needs UI verification
+F1	Preserved
+F2	Needs improvement
+F3	Basic validation present
+F4	Fallback implemented
+F5	Generated label present
+
+F2 is the main concern because the output validator can accept explanations that contain an incorrect reason.
+
+6. Recommended verification order
+I would prioritize the following before accepting the changes.
+Priority 1 — Fix V1
+
+Make the explanation validator verify the actual reason code, not merely negative wording.
+
+Priority 2 — Fix V2
+
+Prevent an old availability result from appearing to describe newly edited inputs.
+
+Priority 3 — Fix V3
+
+Strengthen tests for incorrect explanations and fallback behavior.
+
+Priority 4 — Verify V4
+
+Check cancellation behavior for future asynchronous adapters.
+
+Priority 5 — Improve V5
+
+Clarify the source classification.
+
+7. Commands to run locally
+From your project directory:
+cd week-11/app
+
+npm test
+npx vitest run
+npm run build
+
+
+Then run the Week 11 assignment checker:
+cd ..
+python tests/check_feature.py
+
+
+The original booking tests must remain present and pass. The assignment also requires the final Vitest output to match the number of tests in the committed files.
+
+8. Final review verdict
+Request changes before acceptance
+The implementation is structurally sound, and I did not identify a confirmed change to the deterministic booking rules.
+
+However, I would not yet accept it as fully satisfying F2 because explanation validation is insufficiently strict.
+
+The two most important findings to carry into your Week 11 report are:
+1. V1 — Correctness: An explanation can contain the wrong reason while passing validation.
+2. V2 — UI correctness: Editing request inputs does not invalidate the previous availability result.
+These are suitable findings for your Part 7 repair task because they are specific, tied to acceptance criteria, and have straightforward verification methods.
+
+One important distinction for your report: V1–V5 are my review finding IDs. They are not claims that you have personally reproduced the issues. Your §7.3 labels should be assigned only after you perform the required verification yourself.
+
+No files were modified, and no test or build execution is claimed.
 ```
 
 ### 7.3 The findings, verified
 
 At least **three**; at least **two** `confirmed`. **Category:** `correctness`, `security`,
-`maintainability`, `performance` or `tests`. **Severity:** `high`, `medium` or `low`. **Found by:**
-`reviewer`, `me` or `both`.
+`maintainability`, `performance` or `tests`. **Severity:** `high`, `medium` or `low`. **Found by:** `reviewer`, `me` or `both`.
 
 | ID | Finding (short) | Category | Severity | File | How I verified it | Label | Found by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| V1 | | | | | | | |
-| V2 | | | | | | | |
-| V3 | | | | | | | |
+| V1 | The check for invented times only looks for HH:MM, so "3pm" passes as a model answer | correctness | medium | app/src/explain.ts | Test V1 F2… failed before the fix (expected 'model' to be 'fallback') and passes after it | confirmed | me |
+| V2 | The room label is also searched for "negative" words, so a label like "Overlap Lab" makes a correct answer fall back | correctness | low | app/src/explain.ts | Test V2 F2… failed before the fix (expected 'fallback' to be 'model') and passes after it | confirmed | me |
+| V3 | Tests E2–E5 do not check source, so a broken checker that always gives the fallback still passes them | tests | medium | app/src/explain.test.ts | In one run my change broke isValidExplanation; E1 and V2 failed, but E2–E5 stayed green | confirmed | both |
+| V4 | The validator checks only negative words, not the reason code, so a wrong reason (for example "blocked" for an overlap) can pass | correctness | high | app/src/explain.ts | tests V4 F2… failed (expected 'model' to be 'fallback'): a wrong reason and 'Have a nice day.' were shown as model answers | confirmed | reviewer |
+| V5 | The old result and the Explain button stay on the page after the inputs change | correctness | low | app/src/App.tsx | Ran the page: after changing Start the old Available result and the Explain button stayed. | confirmed | reviewer |
+| V6 | The timeout does not cancel the adapter | performance | medium | app/src/explain.ts | The code calls controller.abort() and passes the signal. The risk exists only for a future adapter that ignores it, and I cannot show it with the mock | plausible | reviewer |
+| V7 | source is 'model' even for the mock adapter | maintainability | low | app/src/explain.ts | Test E1 asserts source is 'model' with mockAdapter | confirmed | reviewer |
+| V8 | The reviewer says tests for the 120-minute limit and touching bookings may be missing | tests | low | app/src/booking.test.ts | These tests exist: T06, T07, T01, T08. The reviewer did not see this file | unsupported | reviewer |
+
+The reviewer used its own IDs V1-V5. I renumbered them: its V1 is my V4, its V2 is my V5, its V3 is my V3, its V4 is my V6, its V5 is my V7. V8 is a suggestion in its answer. V1 and V2 in my table are my own findings, which I fixed before the review, so the reviewer saw the code with those fixes.
 
 ### 7.4 My own inspection, and the linter
 
-What you checked by hand that the reviewer did not, and which of these findings a linter would have
-caught and which it could not:
+What you checked by hand that the reviewer did not, and which of these findings a linter would have caught and which it could not:
 
-<!-- Write below this line -->
+I ran the tests and the page myself; the reviewer only read the code and said it ran nothing. I found V1, V2 and V3 myself, and V1 and V2 were already fixed when the reviewer saw the diff. The reviewer found V4 and V5, which I did not see. It did not see booking.test.ts, so its V8 was wrong.
+A linter would not have caught V1, V2, V3, V4, V5 or V8: they are about meaning and behaviour (what the text says, what the page shows, what the tests cover). A linter could catch small code problems such as unused variables or a promise that is not handled. The project has no lint script, so I could not run one.
 
 ---
 
@@ -365,30 +761,94 @@ caught and which it could not:
 
 ### 8.1 The first fix
 
-**Finding:** V?
+**Finding:** V1
 
-**Why it is necessary:**
+**Why it is necessary:** The page must not show a time that is not in the request (F2). The check only looked for HH:MM, so a model could write "3pm" and the text was shown as a model answer. The new test failed before the fix and passes after it.
 
-**What I rejected from the assistant's proposal, and why:**
+**What I rejected from the assistant's proposal, and why:** nothing: the fix is one regex and one line
 
 The diff (`git diff`):
 
 ```text
-(paste here)
+commit db38c9edf57262b4e9d0e31455d56fe5226b551a
+Author: elizat-nurdymbek <e_nurdymbek@kbtu.kz>
+Date:   Sat Nov 28 13:17:10 2026 +0500
+
+    week-11: fix V1 - reject invented am/pm times
+
+diff --git a/week-11/app/src/explain.ts b/week-11/app/src/explain.ts
+index 2399ce3..dacb64b 100644
+--- a/week-11/app/src/explain.ts
++++ b/week-11/app/src/explain.ts
+@@ -67,7 +67,7 @@ export function validateInput(
+   };
+ }
+ 
+-const NEGATIVE = /not available|unavailable|cannot|can't|not free|blocked|overlap|too long|invalid|past/i;
++const NEGATIVE = /not available|unavailable|cannot|can't|not free|blocked|overlap|too long|invalid|past/i; const CLOCK_WORDS = /\b\d{1,2}\s?(?:am|pm)\b|\bo'clock\b|\bnoon\b|\bmidnight\b/i;
+ const NEGATIVE_FOR_AVAILABLE = /not available|unavailable|cannot|can't|not free|blocked|overlap|too long|invalid/i;
+ 
+ function norm(t: string): string {
+@@ -85,6 +85,7 @@ export function isValidExplanation(output: unknown, input: ExplainInput): output
+   const sentences = t.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0);
+   if (sentences.length > 2) return false;
+   if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(t) : !NEGATIVE.test(t)) return false;
++  if (CLOCK_WORDS.test(t)) return false;
+   const times = t.match(/\b\d{1,2}:\d{2}\b/g) ?? [];
+   const allowed = new Set([norm(input.start), norm(input.end)]);
+   return times.every((x) => allowed.has(norm(x)));
 ```
 
 ### 8.2 The second fix
 
-**Finding:** V?
+**Finding:** V2
 
-**Why it is necessary:**
+**Why it is necessary:** A correct explanation was thrown away when the room name had a word like "overlap" or "blocked". The student then saw the fallback with a wrong label. The checker now ignores the room name.
 
-**What I rejected from the assistant's proposal, and why:**
+**What I rejected from the assistant's proposal, and why:** nothing: the fix is a small change in one function (it removes the room label from the text before the checks).
 
 The diff (`git diff`):
 
 ```text
-(paste here)
+commit 8f5c3d157e3abbe1961aa2580de37a4298a8d068 (HEAD -> week-11)
+Author: elizat-nurdymbek <e_nurdymbek@kbtu.kz>
+Date:   Sat Nov 28 13:17:59 2026 +0500
+
+    week-11: fix V2 - ignore the room label when checking the answer
+
+diff --git a/week-11/app/src/explain.ts b/week-11/app/src/explain.ts
+index dacb64b..b0f53d9 100644
+--- a/week-11/app/src/explain.ts
++++ b/week-11/app/src/explain.ts
+@@ -75,6 +75,10 @@ function norm(t: string): string {
+   return `${h.padStart(2, '0')}:${m}`;
+ }
+ 
++function escapeRegExp(s: string): string {
++  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++}
++
+ // Checks the model's answer. Returns true only if it is safe to show.
+ export function isValidExplanation(output: unknown, input: ExplainInput): output is ExplainOutput {
+   if (typeof output !== 'object' || output === null) return false;
+@@ -82,11 +86,13 @@ export function isValidExplanation(output: unknown, input: ExplainInput): output
+   if (typeof text !== 'string') return false;
+   const t = text.trim();
+   if (t.length === 0 || t.length > MAX_EXPLANATION) return false;
+-  const sentences = t.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0);
++  // The room label is data: remove it before looking for words and times.
++  const body = t.replace(new RegExp(escapeRegExp(input.roomLabel), 'gi'), 'the room');
++  const sentences = body.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0);
+   if (sentences.length > 2) return false;
+-  if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(t) : !NEGATIVE.test(t)) return false;
+-  if (CLOCK_WORDS.test(t)) return false;
+-  const times = t.match(/\b\d{1,2}:\d{2}\b/g) ?? [];
++  if (input.isAvailable ? NEGATIVE_FOR_AVAILABLE.test(body) : !NEGATIVE.test(body)) return false;
++  if (CLOCK_WORDS.test(body)) return false;
++  const times = body.match(/\b\d{1,2}:\d{2}\b/g) ?? [];
+   const allowed = new Set([norm(input.start), norm(input.end)]);
+   return times.every((x) => allowed.has(norm(x)));
+ }
 ```
 
 ### 8.3 The final run
@@ -397,16 +857,24 @@ The real output of the **full** suite after both fixes: the old booking tests an
 together. Every test must pass.
 
 ```text
-(paste here)
+ RUN  v3.2.7 /Users/nurdymbekelizat/se-practice/week-11/app
+
+ ✓ src/booking.test.ts (23 tests) 3ms
+ ✓ src/explain.test.ts (16 tests) 56ms
+
+ Test Files  2 passed (2)
+      Tests  39 passed (39)
+   Start at  13:41:54
+   Duration  346ms (transform 64ms, setup 0ms, collect 87ms, tests 59ms, environment 0ms, prepare 96ms)
 ```
 
 ### 8.4 Ready for demonstration?
 
-**Ready:** yes / no
+**Ready:** yes
 
 **What remains unresolved:**
 
-<!-- Write below this line -->
+I also fixed V4 (commit week-11: fix V4 - check the reason code in the explanation). This matters only for a real model, because the mock always gives the right reason. V5 is not fixed: the old result stays on the page after the inputs change (this was also true in the starter app). V6 (a real adapter must respect the abort signal) is not tested because only the mock exists. The output check uses simple word rules, so a clever wrong answer can still pass. There is no lint script and no component tests. AGENTS.md does not mention explain.ts.
 
 ---
 
@@ -416,7 +884,7 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
 
 | Check | Why it stays |
 | --- | --- |
-| | |
+| none | The checker run is clean. |
 
 ---
 
@@ -431,3 +899,4 @@ Use the same IDs as `known_fails` in `submission.yml`. Write `none` if the run i
      because the timeout was never armed; V1 was confirmed by a test that failed before the fix." -->
 
 <!-- Write your reflection below this line -->
+Claude wrote the explain module, the reason codes, the Explain button and the tests E1–E9. I ran the tests myself: 35 passed first, and the 23 old booking tests stayed green. I also checked the page and made two screenshots. By reading the checker, I found two problems. In V1, an answer with "3pm" was accepted, because the code looked only for HH:MM. The test V1 failed before my fix and passed after it. In V2, a room name like "Overlap Lab" broke a correct answer, and I fixed it too. ChatGPT reviewed the code and found V4 and V5. ChatGPT found V4 and V5. I fixed V4 with a new test that failed first. Its V8 was wrong, because it did not see booking.test.ts. Test E8 showed that the timeout gives the fallback.
